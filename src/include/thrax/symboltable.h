@@ -45,13 +45,14 @@ class SymbolTable : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() != 1) {
-      cout << "SymbolTable: Expected 1 argument but got " << args.size()
-           << endl;
+      std::cout << "SymbolTable: Expected 1 argument but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (!args[0]->is<string>()) {
-      cout << "SymbolTable: Expected string (path) for argument 1" << endl;
+      std::cout << "SymbolTable: Expected string (path) for argument 1"
+                << std::endl;
       return NULL;
     }
     const string& file =
@@ -60,7 +61,8 @@ class SymbolTable : public Function<Arc> {
     VLOG(2) << "Loading symbol table: " << file;
     fst::SymbolTable* symtab(fst::SymbolTable::ReadText(file));
     if (!symtab) {
-      cout << "SymbolTable: Unable to load symbol table file: " << file << endl;
+      std::cout << "SymbolTable: Unable to load symbol table file: " << file
+                << std::endl;
       return NULL;
     }
 

@@ -62,6 +62,8 @@ class FstNode : public Node {
 
   bool HasWeight() const;
   const string& GetWeight() const;
+  const bool ShouldOptimize() const;
+  void SetOptimize();
 
   virtual void Accept(AstWalker* walker);
 
@@ -69,6 +71,7 @@ class FstNode : public Node {
   FstNodeType type_;
   vector<Node*> arguments_;
   StringNode* weight_;  // NULL = default weight.
+  bool optimize_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(FstNode);

@@ -20,7 +20,7 @@
 #ifndef NLP_GRM_LANGUAGE_GRM_COMPILER_H_
 #define NLP_GRM_LANGUAGE_GRM_COMPILER_H_
 
-#include <iostream>
+#include <iostream> // NOLINT
 #include <string>
 #include <vector>
 using std::vector;
@@ -37,6 +37,7 @@ using std::vector;
 #include <thrax/compat/stlfunctions.h>
 
 DECLARE_bool(print_ast);
+DECLARE_bool(line_numbers_in_ast);
 DECLARE_string(indir);
 
 namespace thrax {
@@ -49,7 +50,7 @@ template <typename Arc> class AstEvaluator;
 // know about templates.
 class GrmCompilerParserInterface {
  public:
-  virtual ~GrmCompilerParserInterface() {};
+  virtual ~GrmCompilerParserInterface() {}
   virtual void SetAst(Node* root) = 0;
   virtual Lexer* GetLexer() = 0;
   virtual void Error(const string& message) = 0;
@@ -59,7 +60,6 @@ class GrmCompilerParserInterface {
 template <typename Arc>
 class GrmCompilerSpec : public GrmCompilerParserInterface {
  public:
-
   GrmCompilerSpec();
   ~GrmCompilerSpec();
 
@@ -73,6 +73,10 @@ class GrmCompilerSpec : public GrmCompilerParserInterface {
   // Defined in parser.y.  Returns true on success and false on failure.
   bool ParseFile(const string& filename);
   bool ParseContents(const string& contents);
+
+  // Print the AST to stdout. Returns true if the AST is valid, false otherwise.
+  // Prints the line numbers of the nodes if line_numbers is true.
+  bool PrintAst(bool include_line_numbers);
 
   // Evaluate the AST from scratch, creating a new walker with no preset
   // environment.  Returns true on success and false on failure.
@@ -96,7 +100,7 @@ class GrmCompilerSpec : public GrmCompilerParserInterface {
   Lexer* GetLexer() { return &lexer_; }
 
   void SetAst(Node* root);           // Adds a new AST for this compiler.
-  Node* GetAst() { return root_; };  // Gets the most recently AST.
+  Node* GetAst() { return root_; }  // Gets the most recently AST.
 
   // Returns a pointer to the grammar manager so that we can perform rewrites
   // (or exports, or whatever).  This pointer remains owned by this class,
@@ -142,26 +146,34 @@ void GrmCompilerSpec<Arc>::SetAst(Node* root) {
 }
 
 template <typename Arc>
+bool GrmCompilerSpec<Arc>::PrintAst(bool include_line_numbers) {
+  if (!success_ || !root_) {
+    return false;
+  }
+  AstPrinter printer;
+  printer.include_line_numbers = include_line_numbers;
+  root_->Accept(&printer);
+  return true;
+}
+
+template <typename Arc>
 bool GrmCompilerSpec<Arc>::EvaluateAstWithEnvironment(Namespace* env,
                                                       bool top_level) {
   if (!success_ || !root_) {
     int line_number = GetLexer()->line_number();
-    cout << "****************************************\n";
+    std::cout << "****************************************\n";
     if (line_number == -1) {
-      cout << "At end of file\n";
+      std::cout << "At end of file\n";
     } else {
-      cout << "****************************************\n"
-           << "Line " << GetLexer()->line_number() << "\n"
-           << "Context: "
-           << GetLexer()->GetCurrentContext() << endl;
+      std::cout << "****************************************\n"
+                << "Line " << GetLexer()->line_number() << "\n"
+                << "Context: " << GetLexer()->GetCurrentContext() << std::endl;
     }
     return false;
   }
   if (FLAGS_print_ast) {
-    AstPrinter printer;
-    root_->Accept(&printer);
+    PrintAst(FLAGS_line_numbers_in_ast);
   }
-
   VLOG(1) << "Commencing main compilation (AST evaluation).";
   AstEvaluator<Arc>* evaluator;
   if (env) {
@@ -187,11 +199,11 @@ bool GrmCompilerSpec<Arc>::EvaluateAstWithEnvironment(Namespace* env,
     // only importing the file), this operation is still safe/fast.
     VLOG(1) << "Compilation complete.  Expanding exported FSTs.";
     evaluator->GetFsts(grm_manager_.GetFstMap(), top_level);
+    grm_manager_.SortRuleInputLabels();
   } else {
-    cout << "Compilation failed." << endl;
+    std::cout << "Compilation failed." << std::endl;
     success_ = false;
   }
-
   delete evaluator;
   return success_;
 }
@@ -200,10 +212,9 @@ template <typename Arc>
 void GrmCompilerSpec<Arc>::Error(const string& message) {
   success_ = false;
   if (!message.empty()) {
-    cout << "****************************************\n"
-         << file_ << ":" << GetLexer()->line_number() << ": " << message << "\n"
-         << "Context: "
-         << GetLexer()->GetCurrentContext() << endl;
+    std::cout << "****************************************\n" << file_ << ":"
+              << GetLexer()->line_number() << ": " << message << "\n"
+              << "Context: " << GetLexer()->GetCurrentContext() << std::endl;
   }
 }
 
@@ -212,7 +223,7 @@ bool GrmCompilerSpec<Arc>::ParseFile(const string &filename) {
   string local_grammar = JoinPath(FLAGS_indir, filename);
   VLOG(1) << "Parsing file: " << local_grammar;
 
-  file_ = local_grammar;
+  file_ = filename;
   string contents;
   ReadFileToStringOrDie(local_grammar, &contents);
 

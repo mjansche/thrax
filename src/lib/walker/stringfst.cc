@@ -15,6 +15,8 @@
 
 #include <thrax/stringfst.h>
 
+#include <thrax/function.h>
+
 DEFINE_string(initial_boundary_symbol, "BOS",
               "Predefined symbol to mark beginning of string.");
 DEFINE_string(final_boundary_symbol, "EOS",
@@ -28,3 +30,4 @@ DEFINE_int64(initial_boundary_marker, 0x10fffc,
              "Marker for the beginning of a string.");
 DEFINE_int64(final_boundary_marker, 0x10fffd,
              "Marker for the end of a string.");
+

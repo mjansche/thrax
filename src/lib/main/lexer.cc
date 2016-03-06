@@ -36,6 +36,7 @@ static set<string> InitStaticKeywords() {
 const set<string> Lexer::kKeywords = InitStaticKeywords();
 
 Lexer::TokenClass Lexer::YYLex() {
+  int begin_pos = GetPos();
   int c = GetChar();
 
   bool found_token = false;
@@ -43,10 +44,19 @@ Lexer::TokenClass Lexer::YYLex() {
 
   while (!grammar_.empty() && !found_token && c != 0) {
     if (isspace(c)) {  // skip space
-      while (isspace(c) && c != 0) c = GetChar();
+      while (isspace(c) && c != 0) {
+        begin_pos = GetPos();
+        c = GetChar();
+      }
     } else if (c == '#') {  // skip comment
-      while (c != '\n' && c != 0) c = GetChar();
-      if (c == '\n') c = GetChar();
+      while (c != '\n' && c != 0) {
+        begin_pos = GetPos();
+        c = GetChar();
+      }
+      if (c == '\n') {
+        begin_pos = GetPos();
+        c = GetChar();
+      }
     } else if (c == '"' || c == '\'') {  // quoted string
       char terminator = c;
       curr_token_.token_class = c == '"' ? DOUBLE_QUOTED_STRING : QUOTED_STRING;
@@ -81,6 +91,7 @@ Lexer::TokenClass Lexer::YYLex() {
         if (!isdigit(c) && c != '.') {
           curr_token_.token_class = CONNECTOR;
           found_token = true;
+          UnGetChar();
           continue;
         }
       }
@@ -128,11 +139,17 @@ Lexer::TokenClass Lexer::YYLex() {
                  << c << ")\n";
     }
   }
+  curr_token_.begin_pos = begin_pos;
+  curr_token_.end_pos = GetPos();
   return curr_token_.token_class;
 }
 
 const string &Lexer::YYString() const {
   return curr_token_.token_string;
 }
+
+int Lexer::YYBeginPos() const { return curr_token_.begin_pos; }
+
+int Lexer::YYEndPos() const { return curr_token_.end_pos; }
 
 }  // namespace thrax

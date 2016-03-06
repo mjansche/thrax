@@ -15,7 +15,7 @@
 //
 // The AbstractGrmManager holds a set of FSTs in memory and performs
 // rewrites via composition. The class is parametrized by the FST arc
-// type and mutex type. AbstractGrmManager is thread-compatible.
+// type. AbstractGrmManager is thread-compatible.
 
 #ifndef NLP_GRM_LANGUAGE_ABSTRACT_GRM_MANAGER_H_
 #define NLP_GRM_LANGUAGE_ABSTRACT_GRM_MANAGER_H_
@@ -27,6 +27,8 @@ using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
+#include <fst/extensions/mpdt/compose.h>
+#include <fst/extensions/mpdt/mpdt.h>
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/extensions/pdt/shortest-path.h>
@@ -40,7 +42,7 @@ using std::vector;
 
 namespace thrax {
 
-template <typename Arc, typename TheMutexType>
+template <typename Arc>
 class AbstractGrmManager {
  public:
   typedef fst::Fst<Arc> Transducer;
@@ -49,14 +51,11 @@ class AbstractGrmManager {
 
   virtual ~AbstractGrmManager();
 
-  // Provides a pointer to the underlying FST map so that we can set it
-  // directly.  Note that use of this pointer may break the thread-compatibility
-  // of this class (if one thread mucks with this pointer while another thread
-  // calls other const functions).
-  map<string, Transducer*>* GetFstMap() { return &fsts_; }
+  // Read-only access to the underlying FST map.
+  const map<string, const Transducer*> &GetFstMap() const { return fsts_; }
 
-  // Const version of the above.
-  const map<string, Transducer*> &GetFstMap() const { return fsts_; }
+  // Compile-time access to the FST table.
+  map<string, const Transducer*> *GetFstMap() { return &fsts_; }
 
   // ***************************************************************************
   // REWRITE: These functions perform the actual rewriting of inputs using the
@@ -69,18 +68,23 @@ class AbstractGrmManager {
   // If pdt_parens_rule is not empty, then it the transducer associated with
   // "rule" is assumed to be a pushdown automaton, and that associated with
   // pdt_parens_rule is assumed to specify the parentheses.
+  // If pdt_assignments_rule is not empty, then this is assumed to be an MPDT.
   bool RewriteBytes(const string& rule, const string& input,
                     string* output,
-                    const string& pdt_parens_rule = "") const;
+                    const string& pdt_parens_rule = "",
+                    const string& mpdt_assignments_rule = "") const;
   bool RewriteBytes(const string& rule, const Transducer& input,
                     string* output,
-                    const string& pdt_parens_rule = "") const;
+                    const string& pdt_parens_rule = "",
+                    const string& mpdt_assignments_rule = "") const;
   bool Rewrite(const string& rule, const string& input,
                MutableTransducer* output,
-               const string& pdt_parens_rule = "") const;
+               const string& pdt_parens_rule = "",
+               const string& mpdt_assignments_rule = "") const;
   bool Rewrite(const string& rule, const Transducer& input,
                MutableTransducer* output,
-               const string& pdt_parens_rule = "") const;
+               const string& pdt_parens_rule = "",
+               const string& mpdt_assignments_rule = "") const;
 
   // This helper function (when given a potential string fst) takes the shortest
   // path, projects the output, and then removes epsilon arcs.
@@ -92,35 +96,22 @@ class AbstractGrmManager {
   // Returns the FST associated with the particular name.  This class returns
   // the actual pointer to the FST (or NULL if it is not found), so the caller
   // should not free the pointer.
-  Transducer* GetFst(const string& name) const;
+  const Transducer* GetFst(const string& name) const;
+
+  // Modify the transducer under the given name.
+  // If no such rule name exists, returns false, otherwise returns true.
+  // Note: For thread-safety, it is assumed this function will not be
+  // used in a multi-threaded context.
+  bool SetFst(const string& name, const Transducer& input);
 
   // This function will write the created FSTs into an FST archive with the
   // provided filename.
   virtual void ExportFar(const string& filename) const = 0;
 
-  // TODO(rws): This, and the pointer pdt_parens_, below, may not be needed
-  // ultimately, since we have changed the strategy to using the EXPAND_FILTER
-  // after each composition, thus removing the parens, and obviating the need
-  // for a final pdt ShortestPath. So we only need to know the parens locally to
-  // a particular composition, and there may be no need to know the parens
-  // globally.
-  const vector<pair<Label, Label> >* pdt_parens() const {
-    return pdt_parens_;
-  };
+  // Sorts input labels of all FSTs in the archive.
+  void SortRuleInputLabels();
 
  protected:
-  // Simple scoped mutex lock parametrized by mutex type.
-  class ScopedMutexLock {
-   public:
-    explicit ScopedMutexLock(TheMutexType *mu) : mu_(mu) {
-    }
-    ~ScopedMutexLock() {
-    }
-   private:
-    TheMutexType *mu_;
-    DISALLOW_COPY_AND_ASSIGN(ScopedMutexLock);
-  };
-
   AbstractGrmManager();
 
   // Loads up the FSTs given the supplied reader. Returns true on
@@ -128,86 +119,116 @@ class AbstractGrmManager {
   template <typename FarReader>
   bool LoadArchive(FarReader *reader);
 
-  // Gets the named FST, just like GetFst(), but this function doesn't lock
-  // anything and is thread unsafe.
-  Transducer* GetFstUnlocked(const string& name) const;
+  // Gets the named FST, just like GetFst(), but this function doesn't
+  // lock anything and is thread-safe because it returns transducer
+  // safely shallow-copied from the original. The called assumes the
+  // ownership of the returned transducer.
+  const Transducer* GetFstSafe(const string& name) const;
 
-  // The list of FSTs held by this manager.  It's mutable as some of the
-  // Rewrite() functions might make cosmetic changes to the underlying FSTs.
-  mutable map<string, Transducer*> fsts_;
-  mutable TheMutexType fsts_mutex_;
-
-  // Storage for parens if we are dealing with a pushdown transducer. We need
-  // this to be part of the class definition since we create if there is a named
-  // pdt_parens_rule.
-  vector<pair<Label, Label> >* pdt_parens_;
+  // The list of FSTs held by this manager.
+  map<string, const Transducer*> fsts_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AbstractGrmManager);
 };
 
-template <typename Arc, typename TheMutexType>
-AbstractGrmManager<Arc, TheMutexType>::AbstractGrmManager() {
-  pdt_parens_ = new vector<pair<Label, Label> >;
+template <typename Arc>
+AbstractGrmManager<Arc>::AbstractGrmManager() {
 }
 
-template <typename Arc, typename TheMutexType>
-AbstractGrmManager<Arc, TheMutexType>::~AbstractGrmManager() {
+template <typename Arc>
+AbstractGrmManager<Arc>::~AbstractGrmManager() {
   STLDeleteContainerPairSecondPointers(fsts_.begin(), fsts_.end());
-  delete pdt_parens_;
 }
 
-template <typename Arc, typename TheMutexType>
+template <typename Arc>
 template <typename FarReader>
-bool AbstractGrmManager<Arc, TheMutexType>::LoadArchive(FarReader *reader) {
+bool AbstractGrmManager<Arc>::LoadArchive(FarReader *reader) {
   STLDeleteContainerPairSecondPointers(fsts_.begin(), fsts_.end());
   fsts_.clear();
   for (reader->Reset(); !reader->Done(); reader->Next()) {
     const string& name = reader->GetKey();
-    Transducer* fst = new MutableTransducer(reader->GetFst());
+    const Transducer* fst = new MutableTransducer(reader->GetFst());
     fsts_[name] = fst;
   }
+  SortRuleInputLabels();
   return true;
 }
 
-template <typename Arc, typename TheMutexType>
-typename AbstractGrmManager<Arc, TheMutexType>::Transducer*
-AbstractGrmManager<Arc, TheMutexType>::GetFst(const string& name) const {
-  ScopedMutexLock lock(&fsts_mutex_);
-  return GetFstUnlocked(name);
+template <typename Arc>
+void AbstractGrmManager<Arc>::SortRuleInputLabels() {
+  for (typename map<string, const Transducer*>::iterator pos = fsts_.begin();
+       pos != fsts_.end(); ++pos) {
+    const Transducer *fst = pos->second;
+    if (!fst->Properties(fst::kILabelSorted, false)) {
+      VLOG(1) << "Updating FST " << fst << " with input label sorted version.";
+      MutableTransducer* sorted_fst = new MutableTransducer(*fst);
+      fst::ArcSort(sorted_fst, fst::ILabelCompare<Arc>());
+      delete fst;
+      pos->second = static_cast<const Transducer *>(sorted_fst);
+    }
+  }
 }
 
-template <typename Arc, typename TheMutexType>
-typename AbstractGrmManager<Arc, TheMutexType>::Transducer*
-AbstractGrmManager<Arc, TheMutexType>::GetFstUnlocked(const string& name) const {
-  typename map<string, Transducer*>::const_iterator pos = fsts_.find(name);
+template <typename Arc>
+const typename AbstractGrmManager<Arc>::Transducer*
+AbstractGrmManager<Arc>::GetFst(const string& name) const {
+  typename map<string, const Transducer*>::const_iterator pos =
+      fsts_.find(name);
   if (pos != fsts_.end()) {
     return pos->second;
   }
   return NULL;
 }
 
-template <typename Arc, typename TheMutexType>
-bool AbstractGrmManager<Arc, TheMutexType>::RewriteBytes(
+template <typename Arc>
+const typename AbstractGrmManager<Arc>::Transducer*
+AbstractGrmManager<Arc>::GetFstSafe(const string& name) const {
+  const Transducer *fst = GetFst(name);
+  if (fst) {
+    return fst->Copy(true);
+  } else {
+    return NULL;
+  }
+}
+
+template <typename Arc>
+bool AbstractGrmManager<Arc>::SetFst(
+    const string& name,
+    const Transducer& input) {
+  if (fsts_.count(name) == 0) {
+    return false;
+  }
+  delete fsts_[name];
+  fsts_[name] = input.Copy(true);
+  return true;
+}
+
+template <typename Arc>
+bool AbstractGrmManager<Arc>::RewriteBytes(
     const string& rule, const string& input,
     string* output,
-    const string& pdt_parens_rule) const {
+    const string& pdt_parens_rule,
+    const string& mpdt_assignments_rule) const {
   fst::StringCompiler<Arc>
       string_compiler(fst::StringCompiler<Arc>::BYTE);
   MutableTransducer str_fst;
   if (!string_compiler(input, &str_fst))
     return false;
-  return RewriteBytes(rule, str_fst, output, pdt_parens_rule);
+  return RewriteBytes(rule, str_fst, output, pdt_parens_rule,
+                      mpdt_assignments_rule);
 }
 
-template <typename Arc, typename TheMutexType>
-bool AbstractGrmManager<Arc, TheMutexType>::RewriteBytes(
+template <typename Arc>
+bool AbstractGrmManager<Arc>::RewriteBytes(
     const string& rule,
     const Transducer& input,
     string* output,
-    const string& pdt_parens_rule) const {
+    const string& pdt_parens_rule,
+    const string& mpdt_assignments_rule) const {
   MutableTransducer output_fst;
-  if (!Rewrite(rule, input, &output_fst, pdt_parens_rule))
+  if (!Rewrite(rule, input, &output_fst, pdt_parens_rule,
+               mpdt_assignments_rule))
     return false;
 
   StringifyFst(&output_fst);
@@ -216,73 +237,91 @@ bool AbstractGrmManager<Arc, TheMutexType>::RewriteBytes(
   return printer(output_fst, output);
 }
 
-template <typename Arc, typename TheMutexType>
-bool AbstractGrmManager<Arc, TheMutexType>::Rewrite(
+template <typename Arc>
+bool AbstractGrmManager<Arc>::Rewrite(
     const string& rule, const string& input,
     MutableTransducer* output,
-    const string& pdt_parens_rule) const {
+    const string& pdt_parens_rule,
+    const string& mpdt_assignments_rule) const {
   fst::StringCompiler<Arc>
       string_compiler(fst::StringCompiler<Arc>::BYTE);
   MutableTransducer str_fst;
   if (!string_compiler(input, &str_fst))
     return false;
 
-  return Rewrite(rule, str_fst, output, pdt_parens_rule);
+  return Rewrite(rule, str_fst, output, pdt_parens_rule,
+                 mpdt_assignments_rule);
 }
 
-template <typename Arc, typename TheMutexType>
-bool AbstractGrmManager<Arc, TheMutexType>::Rewrite(
+template <typename Arc>
+bool AbstractGrmManager<Arc>::Rewrite(
     const string& rule, const Transducer& input,
     MutableTransducer* output,
-    const string& pdt_parens_rule) const {
-  pdt_parens_->clear();
-
-  Transducer* rule_fst = GetFstUnlocked(rule);
+    const string& pdt_parens_rule,
+    const string& mpdt_assignments_rule) const {
+  const Transducer *rule_fst = GetFstSafe(rule);
   if (!rule_fst) {
     LOG(ERROR) << "Rule " << rule << " not found.";
     return false;
   }
 
-  Transducer* pdt_parens_fst = NULL;
+  const Transducer *pdt_parens_fst = NULL;
   if (!pdt_parens_rule.empty()) {
-    pdt_parens_fst = GetFstUnlocked(pdt_parens_rule);
+    pdt_parens_fst = GetFstSafe(pdt_parens_rule);
     if (!pdt_parens_fst) {
       LOG(ERROR) << "PDT parentheses rule " << pdt_parens_rule << " not found.";
+      delete rule_fst;
       return false;
     }
   }
 
-  // If the rule FST isn't input-label sorted, do it now so we can compose with
-  // all inputs.  This will also carry through to future rewrites.
-  if (!rule_fst->Properties(fst::kILabelSorted, false)) {
-    VLOG(1) << "Updating FST " << rule << " with input label sorted version.";
-
-    MutableTransducer* sorted_rule_fst = new MutableTransducer(*rule_fst);
-    fst::ArcSort(sorted_rule_fst, fst::ILabelCompare<Arc>());
-    delete rule_fst;
-    rule_fst = static_cast<Transducer*>(sorted_rule_fst);
-    fsts_[rule] = rule_fst;
+  const Transducer *mpdt_assignments_fst = NULL;
+  if (!mpdt_assignments_rule.empty()) {
+    mpdt_assignments_fst = GetFstSafe(mpdt_assignments_rule);
+    if (!mpdt_assignments_fst) {
+      LOG(ERROR) << "MPDT assignments rule " << mpdt_assignments_rule
+                 << " not found.";
+      delete rule_fst;
+      if (pdt_parens_fst) {
+        delete pdt_parens_fst;
+      }
+      return false;
+    }
   }
 
   if (pdt_parens_fst) {
     MutableTransducer mut_pdt_parens_fst(*pdt_parens_fst);
-    MakeParensPairVector(mut_pdt_parens_fst, pdt_parens_);
+    vector<pair<Label, Label> > pdt_parens;
+    MakeParensPairVector(mut_pdt_parens_fst, &pdt_parens);
+
     // EXPAND_FILTER removes the parentheses, allowing for subsequent
     // application of PDTs. At the end (in StringifyFst() we use ordinary
     // ShortestPath().
-    fst::PdtComposeOptions opts(true, fst::EXPAND_FILTER);
-    fst::Compose(input, *rule_fst, *pdt_parens_, output, opts);
+    if (mpdt_assignments_fst) {
+      MutableTransducer mut_mpdt_assignments_fst(*mpdt_assignments_fst);
+      vector<Label> mpdt_assignments;
+      MakeAssignmentsVector(mut_mpdt_assignments_fst, pdt_parens,
+                            &mpdt_assignments);
+      fst::MPdtComposeOptions opts(true, fst::EXPAND_FILTER);
+      fst::Compose(input, *rule_fst, pdt_parens, mpdt_assignments,
+                       output, opts);
+      delete mpdt_assignments_fst;
+    } else {
+      fst::PdtComposeOptions opts(true, fst::EXPAND_FILTER);
+      fst::Compose(input, *rule_fst, pdt_parens, output, opts);
+    }
+    delete pdt_parens_fst;
   } else {
     fst::ComposeOptions opts(true, fst::ALT_SEQUENCE_FILTER);
     fst::Compose(input, *rule_fst, output, opts);
   }
-
+  delete rule_fst;
   return true;
 }
 
-template <typename Arc, typename TheMutexType>
-void AbstractGrmManager<Arc, TheMutexType>::StringifyFst(
-    MutableTransducer* fst) {
+
+template <typename Arc>
+void AbstractGrmManager<Arc>::StringifyFst(MutableTransducer* fst) {
   MutableTransducer temp;
   fst::ShortestPath(*fst, &temp);
   fst::Project(&temp, fst::PROJECT_OUTPUT);

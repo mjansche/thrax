@@ -31,9 +31,9 @@ DECLARE_string(outdir);  // From util/flags.cc.
 namespace thrax {
 
 template <typename Arc>
-class GrmManagerSpec : public AbstractGrmManager<Arc, fst::Mutex> {
-  typedef AbstractGrmManager<Arc, fst::Mutex> Base;
-  typedef map<string, typename Base::Transducer*> FstMap;
+class GrmManagerSpec : public AbstractGrmManager<Arc> {
+  typedef AbstractGrmManager<Arc> Base;
+  typedef map<string, const typename Base::Transducer*> FstMap;
 
  public:
   GrmManagerSpec() : Base() { }
@@ -56,25 +56,21 @@ bool GrmManagerSpec<Arc>::LoadArchive(const string& filename) {
   fst::FarReader<Arc>* reader =
       fst::STTableFarReader<Arc>::Open(filename);
   if (!reader) {
-    cout << "Unable to open FAR: " << filename;
+    std::cout << "Unable to open FAR: " << filename;
     delete reader;
     return false;
   }
-  if (Base::LoadArchive(reader)) {
-    delete reader;
-    return true;
-  } else {
-    delete reader;
-    return false;
-  }
+  bool rc = Base::LoadArchive(reader);
+  delete reader;
+  return rc;
 }
 
 template <typename Arc>
 void GrmManagerSpec<Arc>::ExportFar(const string &filename) const {
-  string dir = JoinPath(FLAGS_outdir, StripBasename(filename));
+  const string dir(JoinPath(
+      FLAGS_outdir, StripBasename(filename)));
   VLOG(1) << "Creating output directory: " << dir;
-  RecursiveCreateOptions file_create_options;
-  if (!RecursivelyCreateDirWithOptions(dir, file_create_options))
+  if (!RecursivelyCreateDir(dir))
     LOG(FATAL) << "Unable to create output directory: " << dir;
 
   const string out_path(JoinPath(FLAGS_outdir, filename));

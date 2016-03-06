@@ -16,17 +16,18 @@
 // Simple implementation of StrCat, needed in various places.  This version
 // allows from 2 to 5 combinations of strings and ints.
 
+#include <thrax/compat/utils.h>
+
+#include <fcntl.h>
+#include <fst/compat.h>
+#include <fstream>
 #include <stdarg.h>
 #include <stdio.h>
+#include <string>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <unistd.h>
-#include <fcntl.h>
-#include <fstream>
-#include <string>
 #include <vector>
-#include <fst/compat.h>
-#include <thrax/compat/utils.h>
+#include <unistd.h>
 
 namespace thrax {
 
@@ -123,6 +124,10 @@ const char* Suffix(const char* filename) {
   return (last_dot ? last_dot + 1 : NULL);
 }
 
+const string Suffix(const string& filename) {
+  return string(Suffix(filename.c_str()));
+}
+
 string StripBasename(const char* filename) {
   const char* base = strrchr(filename, '/');
   if (!base) return(string(""));
@@ -158,8 +163,7 @@ void ReadFileToStringOrDie(const string& file, string* store) {
 
 // A partial (largely non-) implementation of this functionality.
 
-bool RecursivelyCreateDirWithOptions(const string& path,
-                                     const RecursiveCreateOptions& options) {
+bool RecursivelyCreateDir(const string& path) {
   if (path.empty()) return true;
   vector<string> path_comp = Split(path, "/");
   if (path[0] == '/') path_comp[0] = "/" + path_comp[0];

@@ -46,12 +46,12 @@ class ArcSort : public UnaryFstFunction<Arc> {
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
                                       const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "ArcSort: Expected 2 arguments but received " << args.size()
-           << endl;
+      std::cout << "ArcSort: Expected 2 arguments but received " << args.size()
+                << std::endl;
       return NULL;
     }
     if (!args[1]->is<string>()) {
-      cout << "ArcSort: Expected string for argument 2" << endl;
+      std::cout << "ArcSort: Expected string for argument 2" << std::endl;
       return NULL;
     }
 
@@ -63,8 +63,8 @@ class ArcSort : public UnaryFstFunction<Arc> {
       return new fst::ArcSortFst<Arc, fst::OLabelCompare<Arc> >(
           fst, fst::OLabelCompare<Arc>());
     } else {
-      cout << "ArcSort: Invalid sort parameter: " << sort
-           << " (should be 'input' or 'output')" << endl;
+      std::cout << "ArcSort: Invalid sort parameter: " << sort
+                << " (should be 'input' or 'output')" << std::endl;
       return NULL;
     }
   }

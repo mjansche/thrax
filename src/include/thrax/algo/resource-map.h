@@ -41,7 +41,6 @@
 #define THRAX_ALGO_RESOURCE_MAP_H_
 
 #include <unordered_map>
-using std::unordered_map;
 #include <string>
 #include <typeinfo>
 
@@ -55,7 +54,7 @@ namespace thrax {
 class ResourceMap {
  private:
   struct Resource;
-  typedef unordered_map<string, Resource*> Map;
+  typedef std::unordered_map<string, Resource*> Map;
 
  public:
   ResourceMap() {}

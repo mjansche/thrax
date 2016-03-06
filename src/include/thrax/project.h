@@ -43,12 +43,12 @@ class Project : public UnaryFstFunction<Arc> {
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
                                       const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "Project: Expected 2 arguments but received " << args.size()
-           << endl;
+      std::cout << "Project: Expected 2 arguments but received " << args.size()
+                << std::endl;
       return NULL;
     }
     if (!args[1]->is<string>()) {
-      cout << "Project: Expected string for argument 2" << endl;
+      std::cout << "Project: Expected string for argument 2" << std::endl;
       return NULL;
     }
 
@@ -58,8 +58,8 @@ class Project : public UnaryFstFunction<Arc> {
     } else if (project == "output") {
       return new fst::ProjectFst<Arc>(fst, fst::PROJECT_OUTPUT);
     } else {
-      cout << "Project: Invalid projection parameter: " << project
-           << " (should be 'input' or 'output')" << endl;
+      std::cout << "Project: Invalid projection parameter: " << project
+                << " (should be 'input' or 'output')" << std::endl;
       return NULL;
     }
   }

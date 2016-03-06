@@ -49,21 +49,22 @@ class LoadFstFromFar : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "LoadFstFromFar: Expected 2 arguments but got " << args.size()
-           << endl;
+      std::cout << "LoadFstFromFar: Expected 2 arguments but got "
+                << args.size() << std::endl;
       return NULL;
     }
 
     if (!args[0]->is<string>()) {
-      cout << "LoadFstFromFar: Expected string (path) for argument 1" << endl;
+      std::cout << "LoadFstFromFar: Expected string (path) for argument 1"
+                << std::endl;
       return NULL;
     }
     const string& far_file =
         JoinPath(FLAGS_indir, *args[0]->get<string>());
 
     if (!args[1]->is<string>()) {
-      cout << "LoadFstFromFar: Expected string (FST name) for argument 2"
-           << endl;
+      std::cout << "LoadFstFromFar: Expected string (FST name) for argument 2"
+                << std::endl;
       return NULL;
     }
     const string& fst_name = *args[1]->get<string>();
@@ -71,12 +72,14 @@ class LoadFstFromFar : public Function<Arc> {
     VLOG(2) << "Loading FST " << fst_name << " from " << far_file;
     fst::FarReader<Arc>* reader(fst::FarReader<Arc>::Open(far_file));
     if (!reader) {
-      cout << "LoadFstFromFar: Unable to open FAR: " << far_file << endl;
+      std::cout << "LoadFstFromFar: Unable to open FAR: " << far_file
+                << std::endl;
       return NULL;
     }
 
     if (!reader->Find(fst_name)) {
-      cout << "LoadFstFromFar: Unable to find FST: " << fst_name << endl;
+      std::cout << "LoadFstFromFar: Unable to find FST: " << fst_name
+                << std::endl;
       delete reader;
       return NULL;
     }

@@ -74,6 +74,8 @@ extern string JoinPath(const string& dirname, const string& basename);
 
 extern const char* Suffix(const char* filename);
 
+extern const string Suffix(const string& filename);
+
 extern string StripBasename(const char* filename);
 
 extern string StripBasename(const string& filename);
@@ -82,11 +84,7 @@ extern bool Readable(const string& f);
 
 extern void ReadFileToStringOrDie(const string& file, string* store);
 
-struct RecursiveCreateOptions { };
-
-extern bool RecursivelyCreateDirWithOptions(const string& path,
-                                            const RecursiveCreateOptions&
-                                            options);
+extern bool RecursivelyCreateDir(const string& path);
 
 class File {
  public:

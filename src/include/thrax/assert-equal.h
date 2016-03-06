@@ -42,6 +42,7 @@ using std::vector;
 #include <fst/project.h>
 #include <fst/rmepsilon.h>
 #include <fst/shortest-path.h>
+#include <fst/string.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
 
@@ -67,23 +68,44 @@ class AssertEqual : public BinaryFstFunction<Arc> {
   virtual Transducer* BinaryFstExecute(const Transducer& left,
                                        const Transducer& right,
                                        const vector<DataType*>& args) {
-    if (args.size() != 2) {
-      cout << "AssertEqual: Expected 2 arguments but got "
-           << args.size() << endl;
+    if (args.size() < 2 || args.size() > 3) {
+      std::cout << "AssertEqual: Expected 2 or 3 arguments but got "
+                << args.size() << std::endl;
       return NULL;
+    }
+
+    // Optional third argument specifying the symbol table to use
+    typename fst::StringPrinter<Arc>::TokenType mode =
+        fst::StringPrinter<Arc>::BYTE;
+    const fst::SymbolTable* symbols = nullptr;
+    if (args.size() > 2) {
+      if (args[2]->is<string>()) {
+        if (*args[2]->get<string>() == "utf8") {
+          mode = fst::StringPrinter<Arc>::UTF8;
+        } else {
+          mode = fst::StringPrinter<Arc>::BYTE;
+        }
+      } else if (args[2]->is<fst::SymbolTable>()) {
+        symbols = args[2]->get<fst::SymbolTable>();
+        mode = fst::StringPrinter<Arc>::SYMBOL;
+      } else {
+        std::cout << "AssertEqual: Invalid parse mode or symbol table "
+                  << "for symbols" << std::endl;
+        return NULL;
+      }
     }
 
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
-        cout << "AssertEqual: input symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument"
-             << endl;
+        std::cout << "AssertEqual: input symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
       if (!CompatSymbols(left.OutputSymbols(), right.OutputSymbols())) {
-        cout << "AssertEqual: output symbol table of 1st argument "
-             << "does not match output symbol table of 2nd argument"
-             << endl;
+        std::cout << "AssertEqual: output symbol table of 1st argument "
+                  << "does not match output symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
     }
@@ -103,8 +125,33 @@ class AssertEqual : public BinaryFstFunction<Arc> {
     fst::ShortestPath(determinized_right, &mutable_right);
     fst::ArcMap(&mutable_right, fst::RmWeightMapper<Arc>());
     if (!fst::Equivalent(*mutable_left, mutable_right)) {
-      cout << "Arguments to AssertEqual are not equivalent."
-           << endl;
+      // Print strings for debug message.
+      // TODO(rws): This is still going to fail to produce useful output for
+      // extended labels since those will have labels outside the range of BYTE
+      // or UTF8
+      fst::RmEpsilon(mutable_left);
+      fst::RmEpsilon(&mutable_right);
+      fst::StringPrinter<Arc> printer(mode, symbols);
+      string lstring;
+      if (mutable_left->Start() == fst::kNoStateId) {
+        lstring = "NULL";
+      } else {
+        string content;
+        CHECK(printer(*mutable_left, &content));
+        lstring = "\"" + (content) + "\"";
+      }
+      string rstring;
+      if (mutable_right.Start() == fst::kNoStateId) {
+        rstring = "NULL";
+      } else {
+        string content;
+        CHECK(printer(mutable_right, &content));
+        rstring = "\"" + (content) + "\"";
+      }
+      std::cout << "Arguments to AssertEqual are not equivalent:\n"
+                << "  expect: " << rstring << "\n"
+                << "     got: " << lstring << "\n"
+                << std::endl;
       delete mutable_left;
       return NULL;
     }

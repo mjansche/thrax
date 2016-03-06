@@ -46,10 +46,12 @@
 
 (defvar thrax-built-in-functions
   (regexp-opt
-   '("Analyzer" "ArcSort" "AssertEqual" "Category" "CDRewrite" "Closure" "Compose" "Concat" "Connect"
+   '("Analyzer" "ArcSort" "AssertEqual" "Category" "CDRewrite" "Closure" "Compose"
+     "Concat" "Connect"
      "Determinize" "Difference" "Expand" "Feature" "FeatureVector" "Invert" "LoadFst"
-     "LoadFstFromFar" "Minimize" "Optimize" "ParadigmReplace" "PdtCompose" "Project" "Reverse" "Rewrite"
-     "RmEpsilon" "StringFile" "StringFst" "SymbolTable" "Tagger" "Union")
+     "LoadFstFromFar" "Minimize" "MPdtCompose" "Optimize" "ParadigmReplace" "PdtCompose"
+     "Project" "Replace" "Reverse" "Rewrite" "RmEpsilon" "StringFile" "StringFst"
+     "SymbolTable" "Tagger" "Union")
    'words))
 
 (defvar thrax-syntax "[\]\[=@:|*+\?\"(),;{}-]")
@@ -101,7 +103,15 @@
   (set (make-local-variable 'font-lock-string-face) 'red)  ;; double-quoted strings
 )
 
+
 (setq thrax-mode-hook '(lambda () (auto-fill-mode 1)))
 
+(add-hook 'thrax-mode-hook
+  (lambda()
+    (add-hook 'before-save-hook
+      (lambda()
+        (save-excursion
+          (whitespace-cleanup))))))
+
 (setq auto-mode-alist
-      (append '(("\\.grm\\'" . thrax-mode)) auto-mode-alist))
+      (append '(("\\.grm$" . thrax-mode)) auto-mode-alist))

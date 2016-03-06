@@ -45,8 +45,10 @@ static bool ComponentIsValid(const string& s) {
   return !isdigit(s[0]) && (found_alpha || (found_underscore && found_number));
 }
 
-IdentifierNode::IdentifierNode(const string& name)
-    : Node(), full_name_(name) {
+IdentifierNode::IdentifierNode(const string& name) : IdentifierNode(name, -1) {}
+
+IdentifierNode::IdentifierNode(const string& name, int begin_pos)
+    : Node(), full_name_(name), begin_pos_(begin_pos) {
   SplitStringAllowEmpty(full_name_, ".", &namespaces_);
   identifier_ = namespaces_.back();
   namespaces_.pop_back();
@@ -74,6 +76,8 @@ const string& IdentifierNode::GetIdentifier() const {
 const string& IdentifierNode::Get() const {
   return full_name_;
 }
+
+int IdentifierNode::GetBeginPos() const { return begin_pos_; }
 
 bool IdentifierNode::IsValid() const {
   return valid_;

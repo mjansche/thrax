@@ -27,8 +27,8 @@
 //   California. Santa Cruz, California, 1996.
 //   http://acl.ldc.upenn.edu/P/P96/P96-1031.pdf
 
-#ifndef THRAX_ALGO_CONTEXT_DEPENDENT_REWRITE_H_
-#define THRAX_ALGO_CONTEXT_DEPENDENT_REWRITE_H_
+#ifndef FST_GRAMMAR_CDREWRITE_CDREWRITE_H_
+#define FST_GRAMMAR_CDREWRITE_CDREWRITE_H_
 
 #include <set>
 #include <utility>
@@ -97,9 +97,8 @@ void Optimize(MutableFst<Arc> *fst) {
 }
 
 
-enum ContextDependentRewriteDirection { LEFT_TO_RIGHT, RIGHT_TO_LEFT,
-                                        SIMULTANEOUS };
-enum ContextDependentRewriteMode { OBLIGATORY, OPTIONAL };
+enum CDRewriteDirection { LEFT_TO_RIGHT, RIGHT_TO_LEFT, SIMULTANEOUS };
+enum CDRewriteMode { OBLIGATORY, OPTIONAL };
 
 // This class is used to represent context-dependent rewrite rules.  A
 // given rule can be compile into a weighted transducer using
@@ -110,7 +109,7 @@ enum ContextDependentRewriteMode { OBLIGATORY, OPTIONAL };
 // Note: 'Compile' implements the algorithm of Mohri and Sproat (1996),
 // see comments at top of file for a link to that paper.
 template <class A>
-class ContextDependentRewriteRule {
+class CDRewriteRule {
  public:
   typedef A Arc;
   typedef typename A::Label Label;
@@ -122,16 +121,15 @@ class ContextDependentRewriteRule {
   // 'phi', 'lambda' and 'rho' need to be unweighted acceptors and
   // 'psi' a weighted transducer when 'phiXpsi' is true and a weighted
   // acceptor otherwise.
-  ContextDependentRewriteRule(const Fst<Arc> &phi, const Fst<Arc> &psi,
-                              const Fst<Arc> &lambda, const Fst<Arc> &rho,
-                              bool phiXpsi)
+  CDRewriteRule(const Fst<Arc> &phi, const Fst<Arc> &psi,
+                const Fst<Arc> &lambda, const Fst<Arc> &rho, bool phiXpsi)
       : phi_(phi.Copy()),
         psi_(psi.Copy()),
         lambda_(lambda.Copy()),
         rho_(rho.Copy()),
         phiXpsi_(phiXpsi) {}
 
-  ~ContextDependentRewriteRule() {
+  ~CDRewriteRule() {
     delete phi_;
     delete psi_;
     delete lambda_;
@@ -144,10 +142,8 @@ class ContextDependentRewriteRule {
   // LEFT_TO_RIGHT, RIGHT_TO_LEFT or SIMULTANEOUS. 'mode' can be
   // OBLIGATORY or OPTIONAL. 'sigma' must be an unweighted acceptor
   // representing a bifix code.
-  void Compile(const Fst<Arc> &sigma,
-               MutableFst<Arc> *fst,
-               ContextDependentRewriteDirection dir,
-               ContextDependentRewriteMode mode);
+  void Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
+               CDRewriteDirection dir, CDRewriteMode mode);
 
  private:
   enum MarkerType { MARK = 1, CHECK = 2, CHECK_COMPLEMENT = 3};
@@ -177,8 +173,8 @@ class ContextDependentRewriteRule {
   Fst<Arc>* lambda_;
   Fst<Arc>* rho_;
   bool phiXpsi_;
-  ContextDependentRewriteDirection dir_;
-  ContextDependentRewriteMode mode_;
+  CDRewriteDirection dir_;
+  CDRewriteMode mode_;
   // The following labels are used to represent the symbols: <_1, <_2
   // and > in Mohri and Sproat. For instance, for left-to-right
   // obligatory rules, <_1 is used to mark the start of an occurence
@@ -189,7 +185,7 @@ class ContextDependentRewriteRule {
   Label lbrace2_;
   Label rbrace_;
 
-  DISALLOW_COPY_AND_ASSIGN(ContextDependentRewriteRule);
+  DISALLOW_COPY_AND_ASSIGN(CDRewriteRule);
 };
 
 
@@ -197,7 +193,7 @@ class ContextDependentRewriteRule {
 // specified markers (markers) for the regular expression
 // represented by fst, as specified in Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::MakeMarker(
+void CDRewriteRule<Arc>::MakeMarker(
     MutableFst<StdArc> *fst,
     MarkerType type,
     const vector<pair<Label, Label> > &markers) {
@@ -262,8 +258,7 @@ void ContextDependentRewriteRule<Arc>::MakeMarker(
 // specified by markers in any position.
 // This corresponds to the subscripting in Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::IgnoreMarkers(
-    MutableFst<Arc> *fst,
+void CDRewriteRule<Arc>::IgnoreMarkers(MutableFst<Arc> *fst,
     const vector<pair<Label, Label> > &markers) {
   for (typename Arc::StateId i = 0; i < fst->NumStates(); ++i) {
     for (ssize_t k = 0; k < markers.size(); ++k)
@@ -275,8 +270,7 @@ void ContextDependentRewriteRule<Arc>::IgnoreMarkers(
 
 // Turn Sigma^* into (Sigma union markers)^*
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::AddMarkersToSigma(
-    MutableFst<Arc> *sigma,
+void CDRewriteRule<Arc>::AddMarkersToSigma(MutableFst<Arc> *sigma,
     const vector<pair<Label, Label> > &markers) {
   for (typename Arc::StateId s = 0; s < sigma->NumStates(); ++s) {
     if (sigma->Final(s) != Arc::Weight::Zero()) {
@@ -300,8 +294,7 @@ inline void PrependSigmaStar(MutableFst<Arc> *fst,
 // Append to fst a transition for each of the pairs (ilabel, olabel) specified
 // by markers.
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::AppendMarkers(
-    MutableFst<Arc> *fst,
+void CDRewriteRule<Arc>::AppendMarkers(MutableFst<Arc> *fst,
     const vector<pair<Label, Label> > &markers) {
   VectorFst<Arc> temp_fst;
   typename Arc::StateId start = temp_fst.AddState();
@@ -318,8 +311,7 @@ void ContextDependentRewriteRule<Arc>::AppendMarkers(
 // Prepend to fst a transition for each of the pairs (ilabel, olabel) specified
 // by markers.
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::PrependMarkers(
-    MutableFst<Arc> *fst,
+void CDRewriteRule<Arc>::PrependMarkers(MutableFst<Arc> *fst,
     const vector<pair<Label, Label> > &markers) {
   if (fst->Start() == kNoStateId) fst->SetStart(fst->AddState());
   typename Arc::StateId new_start = fst->AddState(), old_start = fst->Start();
@@ -341,13 +333,9 @@ void ContextDependentRewriteRule<Arc>::PrependMarkers(
 // unweighted acceptors. Ideally this would be in the boolean, but we simulate
 // it with the tropical.
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::MakeFilter(
-    const Fst<Arc> &beta,
-    const Fst<Arc> &sigma,
-    MutableFst<Arc> *filter,
-    MarkerType type,
-    const vector<pair<Label, Label> > &markers,
-    bool reverse) {
+void CDRewriteRule<Arc>::MakeFilter(const Fst<Arc> &beta,
+    const Fst<Arc> &sigma, MutableFst<Arc> *filter, MarkerType type,
+    const vector<pair<Label, Label> > &markers, bool reverse) {
   VectorFst<StdArc> ufilter;
   Map(beta, &ufilter, RmWeightMapper<Arc, StdArc>());
   VectorFst<StdArc> usigma;
@@ -384,7 +372,7 @@ void ContextDependentRewriteRule<Arc>::MakeFilter(
 // Turn fst representing phi X psi into a "replace" transducer as
 // specified in Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
+void CDRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
                                                    const Fst<Arc> &sigma) {
   typedef typename Arc::StateId StateId;
   typedef typename Arc::Weight Weight;
@@ -402,45 +390,45 @@ void ContextDependentRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
   vector<pair<Label, Label> > all_loops;
   switch (mode_) {
     case OBLIGATORY:
-      all_loops.push_back(make_pair(lbrace1_, 0));
-      all_loops.push_back(make_pair(lbrace2_, 0));
-      all_loops.push_back(make_pair(rbrace_, 0));
+      all_loops.push_back(std::make_pair(lbrace1_, 0));
+      all_loops.push_back(std::make_pair(lbrace2_, 0));
+      all_loops.push_back(std::make_pair(rbrace_, 0));
       switch (dir_) {
         case LEFT_TO_RIGHT:
-          initial_pair = make_pair(lbrace1_, lbrace1_);
-          final_pair = make_pair(rbrace_, 0);
-          initial_loops.push_back(make_pair(lbrace2_, lbrace2_));
-          initial_loops.push_back(make_pair(rbrace_, 0));
+          initial_pair = std::make_pair(lbrace1_, lbrace1_);
+          final_pair = std::make_pair(rbrace_, 0);
+          initial_loops.push_back(std::make_pair(lbrace2_, lbrace2_));
+          initial_loops.push_back(std::make_pair(rbrace_, 0));
           break;
         case RIGHT_TO_LEFT:
-          initial_pair = make_pair(rbrace_, 0);
-          final_pair = make_pair(lbrace1_, lbrace1_);
-          initial_loops.push_back(make_pair(lbrace2_, lbrace2_));
-          initial_loops.push_back(make_pair(rbrace_, 0));
+          initial_pair = std::make_pair(rbrace_, 0);
+          final_pair = std::make_pair(lbrace1_, lbrace1_);
+          initial_loops.push_back(std::make_pair(lbrace2_, lbrace2_));
+          initial_loops.push_back(std::make_pair(rbrace_, 0));
           break;
         case SIMULTANEOUS:
-          initial_pair = make_pair(lbrace1_, 0);
-          final_pair = make_pair(rbrace_, 0);
-          initial_loops.push_back(make_pair(lbrace2_, 0));
-          initial_loops.push_back(make_pair(rbrace_, 0));
+          initial_pair = std::make_pair(lbrace1_, 0);
+          final_pair = std::make_pair(rbrace_, 0);
+          initial_loops.push_back(std::make_pair(lbrace2_, 0));
+          initial_loops.push_back(std::make_pair(rbrace_, 0));
           break;
       }
       break;
     case OPTIONAL:
-      all_loops.push_back(make_pair(rbrace_, 0));
-      initial_loops.push_back(make_pair(rbrace_, 0));
+      all_loops.push_back(std::make_pair(rbrace_, 0));
+      initial_loops.push_back(std::make_pair(rbrace_, 0));
       switch (dir_) {
         case LEFT_TO_RIGHT:
-          initial_pair = make_pair(0, lbrace1_);
-          final_pair = make_pair(rbrace_, 0);
+          initial_pair = std::make_pair(0, lbrace1_);
+          final_pair = std::make_pair(rbrace_, 0);
           break;
         case RIGHT_TO_LEFT:
-          initial_pair = make_pair(rbrace_, 0);
-          final_pair = make_pair(0, lbrace1_);
+          initial_pair = std::make_pair(rbrace_, 0);
+          final_pair = std::make_pair(0, lbrace1_);
           break;
         case SIMULTANEOUS:
-          initial_pair = make_pair(lbrace1_, 0);
-          final_pair = make_pair(rbrace_, 0);
+          initial_pair = std::make_pair(lbrace1_, 0);
+          final_pair = std::make_pair(rbrace_, 0);
           break;
       }
       break;
@@ -474,8 +462,7 @@ void ContextDependentRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
 
 
 template <class Arc>
-typename Arc::Label ContextDependentRewriteRule<Arc>::MaxLabel(
-    const Fst<Arc>& fst) {
+typename Arc::Label CDRewriteRule<Arc>::MaxLabel(const Fst<Arc>& fst) {
   Label max = kNoLabel;
   StateIterator<Fst<Arc> > state_iter(fst);
   for (; !state_iter.Done(); state_iter.Next()) {
@@ -499,29 +486,29 @@ typename Arc::Label ContextDependentRewriteRule<Arc>::MaxLabel(
 //
 // This function implements the algorithm of Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteRule<Arc>::Compile(
+void CDRewriteRule<Arc>::Compile(
     const Fst<Arc> &sigma,
     MutableFst<Arc> *fst,
-    ContextDependentRewriteDirection dir,
-    ContextDependentRewriteMode mode) {
+    CDRewriteDirection dir,
+    CDRewriteMode mode) {
   dir_ = dir;
   mode_ = mode;
 
   uint64 props = kAcceptor | kUnweighted;
   if (phi_->Properties(props, true) != props)
-    LOG(FATAL) << "ContextDependentRewriteRule::Compile: phi needs to be"
+    LOG(FATAL) << "CDRewriteRule::Compile: phi needs to be"
                << " an unweighted acceptor";
   if (lambda_->Properties(props, true) != props)
-    LOG(FATAL) << "ContextDependentRewriteRule::Compile: lambda needs to be"
+    LOG(FATAL) << "CDRewriteRule::Compile: lambda needs to be"
                << " an unweighted acceptor";
   if (rho_->Properties(props, true) != props)
-    LOG(FATAL) << "ContextDependentRewriteRule::Compile: rho needs to be"
+    LOG(FATAL) << "CDRewriteRule::Compile: rho needs to be"
                << " an unweighted acceptor";
   if (!phiXpsi_ && (psi_->Properties(kAcceptor, true) != kAcceptor))
-    LOG(FATAL) << "ContextDependentRewriteRule::Compile: psi needs to be"
+    LOG(FATAL) << "CDRewriteRule::Compile: psi needs to be"
                << " an acceptor or phiXpsi needs to be set to true";
   if (sigma.Properties(props, true) != props)
-    LOG(FATAL) << "ContextDependentRewriteRule::Compile: sigma needs to be"
+    LOG(FATAL) << "CDRewriteRule::Compile: sigma needs to be"
                << " an unweighted acceptor";
 
   rbrace_ = MaxLabel(sigma) + 1;
@@ -529,7 +516,7 @@ void ContextDependentRewriteRule<Arc>::Compile(
   lbrace2_ = rbrace_ + 2;
   vector<pair<Label, Label> > markers;
   VectorFst<Arc> sigma_rbrace(sigma);
-  markers.push_back(make_pair(rbrace_, rbrace_));
+  markers.push_back(std::make_pair(rbrace_, rbrace_));
   AddMarkersToSigma(&sigma_rbrace, markers);
   markers.clear();
   fst->DeleteStates();
@@ -550,35 +537,35 @@ void ContextDependentRewriteRule<Arc>::Compile(
       // Building r filter:
       VectorFst<Arc> r;
       markers.clear();
-      markers.push_back(make_pair(0, rbrace_));
+      markers.push_back(std::make_pair(0, rbrace_));
       MakeFilter(*rho_, sigma, &r, MARK, markers, true);
       switch (mode_) {
         case OBLIGATORY: {
           VectorFst<Arc> phi_rbrace;  // Append > after phi_, match all >
           Map(*phi_, &phi_rbrace, IdentityMapper<Arc>());
           markers.clear();
-          markers.push_back(make_pair(rbrace_, rbrace_));
+          markers.push_back(std::make_pair(rbrace_, rbrace_));
           IgnoreMarkers(&phi_rbrace, markers);
           AppendMarkers(&phi_rbrace, markers);
           // Building f filter:
           VectorFst<Arc> f;
           markers.clear();
-          markers.push_back(make_pair(0, lbrace1_));
-          markers.push_back(make_pair(0, lbrace2_));
+          markers.push_back(std::make_pair(0, lbrace1_));
+          markers.push_back(std::make_pair(0, lbrace2_));
           MakeFilter(phi_rbrace, sigma_rbrace, &f, MARK, markers, true);
           // Building l1 filter:
           VectorFst<Arc> l1;
           markers.clear();
-          markers.push_back(make_pair(lbrace1_, 0));
+          markers.push_back(std::make_pair(lbrace1_, 0));
           MakeFilter(*lambda_, sigma, &l1, CHECK, markers, false);
           markers.clear();
-          markers.push_back(make_pair(lbrace2_, lbrace2_));
+          markers.push_back(std::make_pair(lbrace2_, lbrace2_));
           IgnoreMarkers(&l1, markers);
           ArcSort(&l1, ILabelCompare<Arc>());
           // Building l2 filter:
           VectorFst<Arc> l2;
           markers.clear();
-          markers.push_back(make_pair(lbrace2_, 0));
+          markers.push_back(std::make_pair(lbrace2_, 0));
           MakeFilter(*lambda_, sigma, &l2, CHECK_COMPLEMENT, markers, false);
           // Building (((r o f) o replace) o l1) o l2
           VectorFst<Arc> c;
@@ -592,7 +579,7 @@ void ContextDependentRewriteRule<Arc>::Compile(
           // Building l filter
           VectorFst<Arc> l;
           markers.clear();
-          markers.push_back(make_pair(lbrace1_, 0));
+          markers.push_back(std::make_pair(lbrace1_, 0));
           MakeFilter(*lambda_, sigma, &l, CHECK, markers, false);
           // Building (r o replace) o l
           VectorFst<Arc> c;
@@ -607,35 +594,35 @@ void ContextDependentRewriteRule<Arc>::Compile(
       // Building l filter
       VectorFst<Arc> l;
       markers.clear();
-      markers.push_back(make_pair(0, rbrace_));
+      markers.push_back(std::make_pair(0, rbrace_));
       MakeFilter(*lambda_, sigma, &l, MARK, markers, false);
       switch (mode_) {
         case OBLIGATORY: {
           VectorFst<Arc> rbrace_phi;  // Prepend > before phi, match all >
           Map(*phi_, &rbrace_phi, IdentityMapper<Arc>());
           markers.clear();
-          markers.push_back(make_pair(rbrace_, rbrace_));
+          markers.push_back(std::make_pair(rbrace_, rbrace_));
           IgnoreMarkers(&rbrace_phi, markers);
           PrependMarkers(&rbrace_phi, markers);
           // Building f filter
           VectorFst<Arc> f;
           markers.clear();
-          markers.push_back(make_pair(0, lbrace1_));
-          markers.push_back(make_pair(0, lbrace2_));
+          markers.push_back(std::make_pair(0, lbrace1_));
+          markers.push_back(std::make_pair(0, lbrace2_));
           MakeFilter(rbrace_phi, sigma_rbrace, &f, MARK, markers, false);
           // Building r1 filter
           VectorFst<Arc> r1;
           markers.clear();
-          markers.push_back(make_pair(lbrace1_, 0));
+          markers.push_back(std::make_pair(lbrace1_, 0));
           MakeFilter(*rho_, sigma, &r1, CHECK, markers, true);
           markers.clear();
-          markers.push_back(make_pair(lbrace2_, lbrace2_));
+          markers.push_back(std::make_pair(lbrace2_, lbrace2_));
           IgnoreMarkers(&r1, markers);
           ArcSort(&r1, ILabelCompare<Arc>());
           // Building r2 filter
           VectorFst<Arc> r2;
           markers.clear();
-          markers.push_back(make_pair(lbrace2_, 0));
+          markers.push_back(std::make_pair(lbrace2_, 0));
           MakeFilter(*rho_, sigma, &r2, CHECK_COMPLEMENT, markers, true);
           // Building (((l o f) o replace) o r1) o r2
           VectorFst<Arc> c;
@@ -649,7 +636,7 @@ void ContextDependentRewriteRule<Arc>::Compile(
           // Building r filter
           VectorFst<Arc> r;
           markers.clear();
-          markers.push_back(make_pair(lbrace1_, 0));
+          markers.push_back(std::make_pair(lbrace1_, 0));
           MakeFilter(*rho_, sigma, &r, CHECK, markers, true);
           // Building (l o replace) o r
           VectorFst<Arc> c;
@@ -664,40 +651,40 @@ void ContextDependentRewriteRule<Arc>::Compile(
       // Building r filter
       VectorFst<Arc> r;
       markers.clear();
-      markers.push_back(make_pair(0, rbrace_));
+      markers.push_back(std::make_pair(0, rbrace_));
       MakeFilter(*rho_, sigma, &r, MARK, markers, true);
       switch (mode_) {
         case OBLIGATORY: {
           VectorFst<Arc> phi_rbrace;  // Append > after phi, match all >
           Map(*phi_, &phi_rbrace, IdentityMapper<Arc>());
           markers.clear();
-          markers.push_back(make_pair(rbrace_, rbrace_));
+          markers.push_back(std::make_pair(rbrace_, rbrace_));
           IgnoreMarkers(&phi_rbrace, markers);
           AppendMarkers(&phi_rbrace, markers);
           // Building f filter
           VectorFst<Arc> f;
           markers.clear();
-          markers.push_back(make_pair(0, lbrace1_));
-          markers.push_back(make_pair(0, lbrace2_));
+          markers.push_back(std::make_pair(0, lbrace1_));
+          markers.push_back(std::make_pair(0, lbrace2_));
           MakeFilter(phi_rbrace, sigma_rbrace, &f, MARK, markers, true);
           // Building l1 filter
           VectorFst<Arc> l1;
           markers.clear();
-          markers.push_back(make_pair(lbrace1_, lbrace1_));
+          markers.push_back(std::make_pair(lbrace1_, lbrace1_));
           MakeFilter(*lambda_, sigma, &l1, CHECK, markers, false);
           markers.clear();
-          markers.push_back(make_pair(lbrace2_, lbrace2_));
-          markers.push_back(make_pair(rbrace_, rbrace_));
+          markers.push_back(std::make_pair(lbrace2_, lbrace2_));
+          markers.push_back(std::make_pair(rbrace_, rbrace_));
           IgnoreMarkers(&l1, markers);
           ArcSort(&l1, ILabelCompare<Arc>());
           // Building l2 filter
           VectorFst<Arc> l2;
           markers.clear();
-          markers.push_back(make_pair(lbrace2_, lbrace2_));
+          markers.push_back(std::make_pair(lbrace2_, lbrace2_));
           MakeFilter(*lambda_, sigma, &l2, CHECK_COMPLEMENT, markers, false);
           markers.clear();
-          markers.push_back(make_pair(lbrace1_, lbrace1_));
-          markers.push_back(make_pair(rbrace_, rbrace_));
+          markers.push_back(std::make_pair(lbrace1_, lbrace1_));
+          markers.push_back(std::make_pair(rbrace_, rbrace_));
           IgnoreMarkers(&l2, markers);
           ArcSort(&l2, ILabelCompare<Arc>());
           // Building (((r o f) o l1) o l2) o replace
@@ -712,10 +699,10 @@ void ContextDependentRewriteRule<Arc>::Compile(
           // Building l filter
           VectorFst<Arc> l;
           markers.clear();
-          markers.push_back(make_pair(0, lbrace1_));
+          markers.push_back(std::make_pair(0, lbrace1_));
           MakeFilter(*lambda_, sigma, &l, CHECK, markers, false);
           markers.clear();
-          markers.push_back(make_pair(rbrace_, rbrace_));
+          markers.push_back(std::make_pair(rbrace_, rbrace_));
           IgnoreMarkers(&l, markers);
           ArcSort(&l, ILabelCompare<Arc>());
           // Building (r o l) o replace
@@ -747,16 +734,16 @@ void ContextDependentRewriteRule<Arc>::Compile(
 //
 // This function implements the algorithm of Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteCompile(const Fst<Arc> &phi,
+void CDRewriteCompile(const Fst<Arc> &phi,
                                     const Fst<Arc> &psi,
                                     const Fst<Arc> &lambda,
                                     const Fst<Arc> &rho,
                                     const Fst<Arc> &sigma,
                                     MutableFst<Arc> *fst,
-                                    ContextDependentRewriteDirection dir,
-                                    ContextDependentRewriteMode mode,
+                                    CDRewriteDirection dir,
+                                    CDRewriteMode mode,
                                     bool phiXpsi) {
-  ContextDependentRewriteRule<Arc> cdrule(phi, psi, lambda, rho, phiXpsi);
+  CDRewriteRule<Arc> cdrule(phi, psi, lambda, rho, phiXpsi);
   cdrule.Compile(sigma, fst, dir, mode);
 }
 
@@ -773,16 +760,15 @@ void ContextDependentRewriteCompile(const Fst<Arc> &phi,
 //
 // This function implements the algorithm of Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteCompile(const Fst<Arc> &phi,
+void CDRewriteCompile(const Fst<Arc> &phi,
                                     const Fst<Arc> &psi,
                                     const Fst<Arc> &lambda,
                                     const Fst<Arc> &rho,
                                     const Fst<Arc> &sigma,
                                     MutableFst<Arc> *fst,
-                                    ContextDependentRewriteDirection dir,
-                                    ContextDependentRewriteMode mode) {
-  ContextDependentRewriteCompile(phi, psi, lambda, rho, sigma, fst, dir, mode,
-                                 false);
+                                    CDRewriteDirection dir,
+                                    CDRewriteMode mode) {
+  CDRewriteCompile(phi, psi, lambda, rho, sigma, fst, dir, mode, false);
 }
 
 
@@ -798,21 +784,20 @@ void ContextDependentRewriteCompile(const Fst<Arc> &phi,
 //
 // This function implements the algorithm of Mohri and Sproat (1996).
 template <class Arc>
-void ContextDependentRewriteCompile(const Fst<Arc> &tau,
+void CDRewriteCompile(const Fst<Arc> &tau,
                                     const Fst<Arc> &lambda,
                                     const Fst<Arc> &rho,
                                     const Fst<Arc> &sigma,
                                     MutableFst<Arc> *fst,
-                                    ContextDependentRewriteDirection dir,
-                                    ContextDependentRewriteMode mode) {
+                                    CDRewriteDirection dir,
+                                    CDRewriteMode mode) {
   VectorFst<Arc> phi(tau);
   Project(&phi, PROJECT_INPUT);
   Map(&phi, RmWeightMapper<Arc>());
   Optimize(&phi);
-  ContextDependentRewriteCompile(phi, tau, lambda, rho, sigma, fst, dir, mode,
-                                 true);
+  CDRewriteCompile(phi, tau, lambda, rho, sigma, fst, dir, mode, true);
 }
 
 }  // namespace fst
 
-#endif  // THRAX_ALGO_CONTEXT_DEPENDENT_REWRITE_H_
+#endif  // FST_GRAMMAR_CDREWRITE_CD_REWRITE_H_

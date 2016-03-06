@@ -23,6 +23,7 @@
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
+#include <thrax/node.h>
 #include <thrax/walker.h>
 
 namespace thrax {
@@ -59,9 +60,13 @@ class AstPrinter : public AstWalker {
   virtual void Visit(StringFstNode* node);
   virtual void Visit(StringNode* node);
 
+  // If true, put line numbers into ast.
+  bool include_line_numbers = false;
+
  private:
   // Returns the spacing prefix for the current nested level.
-  string Spaces() const;
+  // Plus the line number if line_numbers is true.
+  string Spaces(Node *node) const;
 
   // A scoped counter that increments and decrements the spacing as necessary.
   class ScopedSpaceCounter {

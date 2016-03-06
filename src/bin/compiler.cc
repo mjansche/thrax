@@ -25,6 +25,10 @@
 DEFINE_string(input_grammar, "", "Name of the grammar file.");
 DEFINE_string(output_far, "", "Location to write the FST archive.");
 DEFINE_string(arc_type, "standard", "Arc type for compiled fsts");
+DEFINE_bool(emit_ast_only,
+            false,
+            "Parse the input, write its AST to stdout and exit without "
+            "writing an FST archive.");
 
 using thrax::GrmCompilerSpec;
 using thrax::GrmManagerSpec;
@@ -32,7 +36,12 @@ using thrax::GrmManagerSpec;
 template <typename Arc>
 bool CompileGrammar(const string& input_grammar, const string& output_far) {
   GrmCompilerSpec<Arc> grammar;
-  if (grammar.ParseFile(input_grammar) && grammar.EvaluateAst()) {
+  if (!grammar.ParseFile(input_grammar)) {
+    return false;
+  }
+  if (FLAGS_emit_ast_only) {
+    return grammar.PrintAst(FLAGS_line_numbers_in_ast);
+  } else if (grammar.EvaluateAst()) {
     const GrmManagerSpec<Arc>* manager = grammar.GetGrmManager();
     manager->ExportFar(output_far);
     return true;

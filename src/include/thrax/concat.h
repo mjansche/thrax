@@ -53,21 +53,22 @@ class Concat : public BinaryFstFunction<Arc> {
                                        const Transducer& right,
                                        const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "Concat: Expected 2 arguments but got " << args.size() << endl;
+      std::cout << "Concat: Expected 2 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
-        cout << "Concat: input symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument"
-             << endl;
+        std::cout << "Concat: input symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
       if (!CompatSymbols(left.OutputSymbols(), right.OutputSymbols())) {
-        cout << "Concat: output symbol table of 1st argument "
-             << "does not match output symbol table of 2nd argument"
-             << endl;
+        std::cout << "Concat: output symbol table of 1st argument "
+                  << "does not match output symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
     }
@@ -94,22 +95,22 @@ class ConcatDelayed : public BinaryFstFunction<Arc> {
                                        const Transducer& right,
                                        const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "ConcatDelayed: Expected 2 arguments but got " << args.size()
-           << endl;
+      std::cout << "ConcatDelayed: Expected 2 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
-        cout << "ConcatDelayed: input symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument"
-             << endl;
+        std::cout << "ConcatDelayed: input symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
       if (!CompatSymbols(left.OutputSymbols(), right.OutputSymbols())) {
-        cout << "ConcatDelayed: output symbol table of 1st argument "
-             << "does not match output symbol table of 2nd argument"
-             << endl;
+        std::cout << "ConcatDelayed: output symbol table of 1st argument "
+                  << "does not match output symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
     }

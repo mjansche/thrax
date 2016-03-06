@@ -23,7 +23,7 @@ import 'numbers.grm' as numbers;
 #
 # To compile this grammar, the easiest way is to run
 #
-# thraxmakedepend example.grm
+# thraxmakedep example.grm
 #
 # And then run "make". "thraxmakedepend" is a python script that reads in a
 # top-level grammar, figures out the dependencies, and writes out a makefile (by
@@ -34,14 +34,14 @@ import 'numbers.grm' as numbers;
 # example.far: example.grm byte.far numbers.far
 #	thraxcompiler --input_grammar=$< --output_far=$@
 #
-# byte.far: byte.grm 
+# byte.far: byte.grm
 #	thraxcompiler --input_grammar=$< --output_far=$@
 #
 # numbers.far: numbers.grm byte.far
-# 	thraxcompiler --input_grammar=$< --output_far=$@
+#       thraxcompiler --input_grammar=$< --output_far=$@
 #
 # clean:
-# 	rm -f byte.far numbers.far
+#       rm -f byte.far numbers.far
 #
 # As indicated, the final target is the FST archive example.far, which will
 # contain a single fst named TOKENIZER.fst (see below). After compiling the
@@ -62,8 +62,8 @@ import 'numbers.grm' as numbers;
 #
 # To test this grammar one can use thraxrewrite-tester as follows:
 #
-# $ thraxrewrite-tester --far=example.far --rule=TOKENIZER
-# Input string: Well, I can't eat muffins in an agitated manner. 
+# $ thraxrewrite-tester --far=example.far --rules=TOKENIZER
+# Input string: Well, I can't eat muffins in an agitated manner.
 # Output string: Well , I ca n't eat muffins in an agitated manner .
 # Input string: Mr. Ernest Worthing, B. 4, The Albany.
 # Output string: Mr. Ernest Worthing , B. four , The Albany .
@@ -84,7 +84,7 @@ reduce_spaces = bytelib.kSpace+ : " ";
 
 # This deletes a sequence of zero or more spaces:
 
-delspace = bytelib.kSpace* : ""; 
+delspace = bytelib.kSpace* : "";
 
 # For context-dependent rewrite rules, one must specify the alphabet over which
 # the rule is to apply. This should be specified as the transitive closure of
@@ -143,7 +143,7 @@ separate_punct = separate_punct1 @ separate_punct2;
 # string. For the left context, one may specify the beginning of the string as
 # "[BOS]".
 
-separate_final_period = CDRewrite["" : " ", 
+separate_final_period = CDRewrite["" : " ",
                                   "",
                                   "."
                                   (bytelib.kPunct | bytelib.kSpace)* "[EOS]",
@@ -204,10 +204,10 @@ word = (anyword <1.5>) | number | ernest;
 # and final spaces get deleted, and interword spaces get reduced to exactly one
 # space:
 
-second_phase = delspace 
+second_phase = delspace
                word
                (reduce_spaces word)*
-	       delspace
+               delspace
 ;
 
 # Some sequences involving apostrophes are overzealously tokenized. These rules

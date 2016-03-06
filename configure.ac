@@ -1,7 +1,9 @@
-AC_INIT([Thrax], [1.1.0], [help@www.opengrm.org])
+AC_INIT([Thrax], [1.2.0], [help@www.opengrm.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
+AM_PROG_AR
 
-CXXFLAGS="$CXXFLAGS -std=c++0x"
+CXXFLAGS="$CXXFLAGS -std=c++11"
+
 AC_PROG_CXX
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
@@ -55,6 +57,10 @@ AC_CHECK_HEADER([fst/extensions/far/far.h], [],
 
 AC_CHECK_HEADER([fst/extensions/pdt/pdt.h], [],
  [AC_MSG_ERROR([fst/extensions/pdt/pdt.h header not found])]
+)
+
+AC_CHECK_HEADER([fst/extensions/mpdt/mpdt.h], [],
+ [AC_MSG_ERROR([fst/extensions/mpdt/mpdt.h header not found])]
 )
 
 AC_OUTPUT

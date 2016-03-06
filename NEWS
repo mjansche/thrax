@@ -34,5 +34,16 @@ Thrax - Release 1.1
 * Added more useful debug information --- grammar file name and line number ---
   to allow more one to find bugs in the grammar more easily.
 * Generated labels are now output in readable form by thraxrewrite-tester and
-  thraxrandom-generator 
+  thraxrandom-generator.
 * Generated labels (enclosed in "[]") may no longer be single-character.
+* Allow ASSERT_EQUAL declarations in the grammar.
+
+
+Thrax - Release 1.2
+
+* Added interface to multi-pushdown transducer (MPDT) functionality from OpenFst.
+* Added interface to Replace class in OpenFst.
+* Adds --show_details flag to thraxrewrite-tester. When it is set and when
+  multiple rules  are specified, the tool will show the output of each
+  individual rule. Useful when trying to find which rule caused a problem.
+* Raises a warning if more than one definition is given for a function.

@@ -34,7 +34,8 @@ class AstWalker;
 
 class IdentifierNode : public Node {
  public:
-  IdentifierNode(const string& name);
+  explicit IdentifierNode(const string& name);
+  IdentifierNode(const string& name, int begin_pos);
   virtual ~IdentifierNode();
 
   // Return the entire identifier as originally used in the source.
@@ -43,6 +44,9 @@ class IdentifierNode : public Node {
   // Returns the actual identifier - the last component.  For example, if the
   // identifier is foo.bar.baz, this will return baz.
   const string& GetIdentifier() const;
+
+  // Returns the beginning byte position of the identifier in the source.
+  int GetBeginPos() const;
 
   // Returns true if there are any namespace qualifiers and false otherwise.
   bool HasNamespaces() const;
@@ -67,6 +71,7 @@ class IdentifierNode : public Node {
   string full_name_;
   string identifier_;
   vector<string> namespaces_;  // The full_name_ broken up by namespaces.
+  int begin_pos_;
   bool valid_;
 
   DISALLOW_COPY_AND_ASSIGN(IdentifierNode);

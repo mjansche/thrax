@@ -98,11 +98,12 @@ class UnaryFstFunction : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() < 1) {
-      cout << "UnaryFstFunction: Expected at least 1 argument" << endl;
+      std::cout << "UnaryFstFunction: Expected at least 1 argument"
+                << std::endl;
       return NULL;
     }
     if (!args[0]->is<Transducer*>()) {
-      cout << "UnaryFstFunction: Expected FST for argument 1" << endl;
+      std::cout << "UnaryFstFunction: Expected FST for argument 1" << std::endl;
       return NULL;
     }
 
@@ -135,13 +136,14 @@ class BinaryFstFunction : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() < 2) {
-      cout << "BinaryFstFunction: Expected at least 2 arguments" << endl;
+      std::cout << "BinaryFstFunction: Expected at least 2 arguments"
+                << std::endl;
       return NULL;
     }
     for (int i = 0; i < 2; ++i) {
       if (!args[i]->is<Transducer*>()) {
-        cout << "BinaryFstFunction: Expected FST for argument " << i + 1
-             << endl;
+        std::cout << "BinaryFstFunction: Expected FST for argument " << i + 1
+                  << std::endl;
         return NULL;
       }
     }

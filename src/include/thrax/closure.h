@@ -48,12 +48,12 @@ class Closure : public UnaryFstFunction<Arc> {
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
                                       const vector<DataType*>& args) {
     if (args.size() < 2) {
-      cout << "Closure: Expected 2 or 4 arguments" << endl;
+      std::cout << "Closure: Expected 2 or 4 arguments" << std::endl;
       return NULL;
     }
 
     if (!args[1]->is<int>()) {
-      cout << "Closure: Expected int/enum for argument 2" << endl;
+      std::cout << "Closure: Expected int/enum for argument 2" << std::endl;
       return NULL;
     }
     RepetitionFstNode::RepetitionFstNodeType type =
@@ -64,7 +64,8 @@ class Closure : public UnaryFstFunction<Arc> {
     switch (type) {
       case RepetitionFstNode::STAR: {
         if (args.size() != 2) {
-          cout << "Closure: Expected 2 arguments for star closure" << endl;
+          std::cout << "Closure: Expected 2 arguments for star closure"
+                    << std::endl;
           return NULL;
         }
         output = new MutableTransducer(fst);
@@ -73,7 +74,8 @@ class Closure : public UnaryFstFunction<Arc> {
       }
       case RepetitionFstNode::PLUS: {
         if (args.size() != 2) {
-          cout << "Closure: Expected 2 arguments for plus closure" << endl;
+          std::cout << "Closure: Expected 2 arguments for plus closure"
+                    << std::endl;
           return NULL;
         }
         output = new MutableTransducer(fst);
@@ -82,7 +84,8 @@ class Closure : public UnaryFstFunction<Arc> {
       }
       case RepetitionFstNode::QUESTION: {
         if (args.size() != 2) {
-          cout << "Closure: Expected 2 arguments for optional closure" << endl;
+          std::cout << "Closure: Expected 2 arguments for optional closure"
+                    << std::endl;
           return NULL;
         }
         output = ConcatRange(fst, 0, 1);
@@ -90,13 +93,15 @@ class Closure : public UnaryFstFunction<Arc> {
       }
       case RepetitionFstNode::RANGE: {
         if (args.size() != 4) {
-          cout << "Closure: Expected 4 arguments for range closure" << endl;
+          std::cout << "Closure: Expected 4 arguments for range closure"
+                    << std::endl;
           return NULL;
         }
         for (int i = 2; i < 4; ++i) {
           if (!args[i]->is<int>()) {
-            cout << "Closure: Expected int for argument " << i + 1 << " for "
-                 << "range closure" << endl;
+            std::cout << "Closure: Expected int for argument " << i + 1
+                      << " for "
+                      << "range closure" << std::endl;
             return NULL;
           }
         }
@@ -106,8 +111,8 @@ class Closure : public UnaryFstFunction<Arc> {
         break;
       }
       default: {
-        cout << "Closure: No implementation for RepetitionFstNode type "
-             << type;
+        std::cout << "Closure: No implementation for RepetitionFstNode type "
+                  << type;
         return NULL;
       }
     }

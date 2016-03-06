@@ -48,12 +48,14 @@ class LoadFst : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() != 1) {
-      cout << "LoadFst: Expected 1 argument but got " << args.size() << endl;
+      std::cout << "LoadFst: Expected 1 argument but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (!args[0]->is<string>()) {
-      cout << "LoadFst: Expected string (path) for argument 1" << endl;
+      std::cout << "LoadFst: Expected string (path) for argument 1"
+                << std::endl;
       return NULL;
     }
     const string& file = JoinPath(FLAGS_indir, *args[0]->get<string>());
@@ -61,7 +63,8 @@ class LoadFst : public Function<Arc> {
     VLOG(2) << "Loading FST: " << file;
     Transducer* fst = Transducer::Read(file);
     if (!fst) {
-      cout << "LoadFst: Failed to load FST from file: " << file << endl;
+      std::cout << "LoadFst: Failed to load FST from file: " << file
+                << std::endl;
       return NULL;
     }
 

@@ -41,8 +41,8 @@ DECLARE_bool(always_export);
 
 using namespace thrax;
 
-#define YYPARSE_PARAM parm
-#define YYLEX_PARAM parm
+
+
 #define CTRL (static_cast<GrmCompilerParserInterface*>(parm))
 
 class FuncOrStmt {
@@ -53,10 +53,21 @@ public:
 
 namespace thrax_rewriter {
   int yylex(void *, void *parm);
-  int yyerror(const char *);
+     void yyerror(void *parm, const char *s);
+
+/* For some reason the brain-dead new version of bison *generates* code
+   that depends on this definition, but does not actually generate
+   a definition for this. I have not figured out how to get around that
+   in a cleaner way. */
+
+void yyerror(void *parm, const char *s) {
+   cout << "Parse Failed: " << s << endl;
+}
 %}
 
-%pure_parser
+%define api.pure full
+%parse-param { void *parm }
+%lex-param { void *parm }
 
 %union {
   int                        int_type;
@@ -216,7 +227,8 @@ rule_body:
 descriptor:
   tDESCR
     { const string& name = CTRL->GetLexer()->YYString();
-      IdentifierNode* node = new IdentifierNode(name);
+      int begin_pos = CTRL->GetLexer()->YYBeginPos();
+      IdentifierNode* node = new IdentifierNode(name, begin_pos);
       node->SetLine(CTRL->GetLexer()->line_number());
       if (!node->IsValid())
         CTRL->Error(StringPrintf("Illegal identifier: %s", name.c_str()));

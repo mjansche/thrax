@@ -46,7 +46,8 @@ class Connect : public UnaryFstFunction<Arc> {
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
                                       const vector<DataType*>& args) {
     if (args.size() != 1) {
-      cout << "Connect: Expected 1 argument but got " << args.size() << endl;
+      std::cout << "Connect: Expected 1 argument but got " << args.size()
+                << std::endl;
       return NULL;
     }
 

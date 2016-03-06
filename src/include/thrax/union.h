@@ -49,21 +49,22 @@ class Union : public BinaryFstFunction<Arc> {
                                        const Transducer& right,
                                        const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "Union: Expected 2 arguments but got " << args.size() << endl;
+      std::cout << "Union: Expected 2 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
-        cout << "Union: input symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument"
-             << endl;
+        std::cout << "Union: input symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
       if (!CompatSymbols(left.OutputSymbols(), right.OutputSymbols())) {
-        cout << "Union: output symbol table of 1st argument "
-             << "does not match output symbol table of 2nd argument"
-             << endl;
+        std::cout << "Union: output symbol table of 1st argument "
+                  << "does not match output symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
     }
@@ -90,22 +91,22 @@ class UnionDelayed : public BinaryFstFunction<Arc> {
                                        const Transducer& right,
                                        const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "UnionDelayed: Expected 2 arguments but got " << args.size()
-           << endl;
+      std::cout << "UnionDelayed: Expected 2 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
-        cout << "UnionDelayed: input symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument"
-             << endl;
+        std::cout << "UnionDelayed: input symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
       if (!CompatSymbols(left.OutputSymbols(), right.OutputSymbols())) {
-        cout << "UnionDelayed: output symbol table of 1st argument "
-             << "does not match output symbol table of 2nd argument"
-             << endl;
+        std::cout << "UnionDelayed: output symbol table of 1st argument "
+                  << "does not match output symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
     }

@@ -27,7 +27,7 @@ endif
 syn keyword thraxKeyword as import return
 syn keyword thraxParseKeyword byte utf8
 syn keyword thraxIncludedKeyword export func contained
-syn keyword thraxBuiltinFunctions Analyzer ArcSort AssertEqual CDRewrite Category Closure Compose Concat Connect Determinize Difference Expand Feature FeatureVector Invert LoadFst LoadFstFromFar Minimize Optimize ParadigmReplace PdtCompose Project Reverse Rewrite RmEpsilon StringFile StringFst SymbolTable Tagger Union
+syn keyword thraxBuiltinFunctions Analyzer ArcSort AssertEqual CDRewrite Category Closure Compose Concat Connect Determinize Difference Expand Feature FeatureVector Invert LoadFst LoadFstFromFar Minimize MPdtCompose Optimize ParadigmReplace PdtCompose Project Replace Reverse Rewrite RmEpsilon StringFile StringFst SymbolTable Tagger Union
 
 syn match   thraxSymbols "\(\[\|\]\|=\|{\|}\|;\||\|+\|\*\|-\|,\|?\|<\|>\|:\|@\|(\|)\)" display
 syn match   thraxBackslashedChar "\\." display contained

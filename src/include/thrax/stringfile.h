@@ -53,13 +53,13 @@ class StringFile : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() < 1 || args.size() > 3) {
-      cout << "StringFile: Expected 1-3 arguments but got "
-           << args.size()
-           << endl;
+      std::cout << "StringFile: Expected 1-3 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
     if (!args[0]->is<string>()) {
-      cout << "StringFile: Expected string (file) for argument 1" << endl;
+      std::cout << "StringFile: Expected string (file) for argument 1"
+                << std::endl;
       return NULL;
     }
     int imode = fst::StringCompiler<Arc>::BYTE;
@@ -82,9 +82,8 @@ class StringFile : public Function<Arc> {
         isymbols = args[1]->get<fst::SymbolTable>();
         imode = fst::StringCompiler<Arc>::SYMBOL;
       } else {
-        cout << "StringFile: Invalid parse mode or symbol table "
-             << "for input symbols"
-             << endl;
+        std::cout << "StringFile: Invalid parse mode or symbol table "
+                  << "for input symbols" << std::endl;
         return NULL;
       }
     }
@@ -105,9 +104,8 @@ class StringFile : public Function<Arc> {
         osymbols = args[2]->get<fst::SymbolTable>();
         omode = fst::StringCompiler<Arc>::SYMBOL;
       } else {
-        cout << "StringFile: Invalid parse mode or symbol table "
-             << "for output symbols"
-             << endl;
+        std::cout << "StringFile: Invalid parse mode or symbol table "
+                  << "for output symbols" << std::endl;
         return NULL;
       }
     }
@@ -141,11 +139,8 @@ class StringFile : public Function<Arc> {
                olabels.begin(), olabels.end());
         acceptor = false;
       } else {
-        cout << "StringFile: Possible ill-formed line "
-             << linenum
-             << " in "
-             << filename
-             << endl;
+        std::cout << "StringFile: Possible ill-formed line " << linenum
+                  << " in " << filename << std::endl;
         continue;
       }
       ++linenum;

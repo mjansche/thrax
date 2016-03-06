@@ -92,8 +92,9 @@ class StringFst : public Function<Arc> {
         CHECK_EQ(args.size(), 3);
         mode = fst::StringCompiler<Arc>::SYMBOL;
         if (!args[2]->is<fst::SymbolTable>()) {
-          cout << "StringFst: Invalid symbol table for symbol table parse mode"
-               << endl;
+          std::cout
+              << "StringFst: Invalid symbol table for symbol table parse mode"
+              << std::endl;
           return NULL;
         }
         symtab = args[2]->get<fst::SymbolTable>();
@@ -122,34 +123,37 @@ class StringFst : public Function<Arc> {
 
       if (c == '[' && mode != fst::StringCompiler<Arc>::SYMBOL) {
         if (in_genlab) {
-          cout << "StringFst: Cannot start new generated label while in "
-               << "previous label" << endl;
+          std::cout << "StringFst: Cannot start new generated label while in "
+                    << "previous label" << std::endl;
           delete fst;
           return NULL;
         }
         if (!AddBlock(&compiler, &chunk, fst)) {
-          cout << "StringFst: Failed to compile chunk: " << chunk << endl;
+          std::cout << "StringFst: Failed to compile chunk: " << chunk
+                    << std::endl;
           delete fst;
           return NULL;
         }
         in_genlab = true;
       } else if (c == ']' && mode != fst::StringCompiler<Arc>::SYMBOL) {
         if (!in_genlab) {
-          cout << "StringFst: Cannot terminate generated label without already "
-               << "being in one" << endl;
+          std::cout
+              << "StringFst: Cannot terminate generated label without already "
+              << "being in one" << std::endl;
           delete fst;
           return NULL;
         }
         for (int i = 0; i < chunk.length(); ++i) {
           if (isspace(chunk[i])) {
-            cout << "StringFst: Cannot have labels containing whitespace: "
-                 << chunk << endl;
+            std::cout << "StringFst: Cannot have labels containing whitespace: "
+                      << chunk << std::endl;
             delete fst;
             return NULL;
           }
         }
         if (!AddGeneratedLabel(&chunk, fst, mode)) {
-          cout << "StringFst: Failed to generate label: " << chunk << endl;
+          std::cout << "StringFst: Failed to generate label: " << chunk
+                    << std::endl;
           delete fst;
           return NULL;
         }
@@ -159,8 +163,9 @@ class StringFst : public Function<Arc> {
         // chunk.
         if (c == '\\') {
           if (++i >= text.length()) {
-            cout << "StringFst: Unterminated escaped character at string end"
-                 << endl;
+            std::cout
+                << "StringFst: Unterminated escaped character at string end"
+                << std::endl;
             delete fst;
             return NULL;
           }
@@ -178,13 +183,13 @@ class StringFst : public Function<Arc> {
       }
     }
     if (in_genlab) {
-      cout << "StringFst: Unexpected string termination in generated label"
-           << endl;
+      std::cout << "StringFst: Unexpected string termination in generated label"
+                << std::endl;
       delete fst;
       return NULL;
     }
     if (!AddBlock(&compiler, &chunk, fst)) {
-      cout << "StringFst: Failed to compile chunk: " << chunk << endl;
+      std::cout << "StringFst: Failed to compile chunk: " << chunk << std::endl;
       delete fst;
       return NULL;
     }
@@ -244,20 +249,71 @@ class StringFst : public Function<Arc> {
       int64 label = symtab.GetNthKey(i);
       string symbol = symtab.Find(label);
 
-      int64* old_label =
-          InsertOrReturnExisting(&symbol_label_map_, symbol, label);
-      if (old_label != NULL && *old_label != label) {
-        LOG(WARNING) << "Generated symbol " << symbol << " already exists with "
-                     << "a different label.";
-        success = false;
-      } else {
+      // Checks to see if we already have this label paired with this
+      // symbol. FSTs associated with the incoming symbol table will get
+      // remapped as needed.
+      // Four possible outcomes:
+      // 1) Neither label nor symbol exist: insert this new pair.
+      // 2) Label exists but mapped to another symbol: generate new_label for
+      //    the symbol, and add <label, new_label> to the remapping table.
+      // 3) Symbol exists but with another old_label: reassign to old_label and
+      //    add <label, old_label> to the remapping table.
+      // 4) Both label and symbol exist: then we need to ask whether they have
+      //    the same mapping.
+      typename Map::iterator slx = symbol_label_map_.find(symbol);
+      typename InverseMap::iterator lsx = label_symbol_map_.find(label);
+      if (slx == symbol_label_map_.end() && lsx == label_symbol_map_.end()) {
+        // Case 1: Both new
+        symbol_label_map_.insert(Map::value_type(symbol, label));
+        label_symbol_map_.insert(InverseMap::value_type(label, symbol));
         VLOG(2) << "Loaded symbol " << symbol << " with label " << label;
-        if (next_label_ <= label)   // On success, then keep track of the
+        if (next_label_ <= label)   // On success, keeps track of the
           next_label_ = label + 1;  // maximum + 1 for the next available label.
+      } else if (slx == symbol_label_map_.end()) {
+        // Case 2: symbol is new, but label is there and therefore mapped to
+        // something else.
+        int64 new_label = next_label_++;
+        symbol_label_map_.insert(Map::value_type(symbol, new_label));
+        label_symbol_map_.insert(InverseMap::value_type(new_label, symbol));
+        remap_.insert(Remap::value_type(label, new_label));
+        VLOG(2) << "Remapping " << symbol << " to new label " << new_label;
+      } else if (lsx == label_symbol_map_.end()) {
+        // Case 3: label is new, but symbol is there and therefore mapped to
+        // something else.
+        int64 old_label = slx->second;
+        remap_.insert(Remap::value_type(label, old_label));
+        VLOG(2) << "Remapping " << symbol << " to old label " << old_label;
+      } else {
+        // Case 4: Both symbol and label already exist.
+        const string& old_symbol = lsx->second;
+        int64 old_label = slx->second;
+        if (symbol == old_symbol && label == old_label) {
+          // Same, so ok and nothing to do.
+          continue;
+        } else if (label == old_label || symbol == old_symbol) {
+          // symbol -> label gets you the right label, but label -> symbol
+          // doesn't. Or the other way around. This should not happen.
+          LOG(WARNING) << "Detected label mismatch: "
+                       << symbol << " -> " << old_label << ", "
+                       << label << " -> " << old_symbol;
+          success = false;
+        } else {
+          // Both are there but assigned to other things
+          remap_.insert(Remap::value_type(label, old_label));
+          VLOG(2) << "Remapping " << symbol << " to old label " << old_label;
+        }
       }
     }
-
     return success;
+  }
+
+  static void ClearRemap() { remap_.clear(); }
+
+  // Returns the remap value, or fst::kNoLabel
+  static int64 FindRemapLabel(int64 old_label) {
+    typename Remap::iterator ix = remap_.find(old_label);
+    if (ix == remap_.end()) return fst::kNoLabel;
+    return ix->second;
   }
 
   // This stores the assigned label for the provided symbol (from the map) into
@@ -290,24 +346,12 @@ class StringFst : public Function<Arc> {
   inline void WarnSingleCharacter(const string& symbol, int64 label) {
     LOG(WARNING) << "Single character generated labels are deprecated "
                  << "since they introduce symbols that have more than one "
-                 << "encoding."
-                 << endl
-                 << '"'
-                 << symbol
-                 << '"'
-                 << " is being encoded as "
-                 << label
-                 << ".  "
+                 << "encoding." << std::endl << '"' << symbol << '"'
+                 << " is being encoded as " << label << ".  "
                  << "We suggest replacing "
-                 << "\"["
-                 << symbol
-                 << "]\" with just "
-                 << '"'
-                 << symbol
-                 << '"'
+                 << "\"[" << symbol << "]\" with just " << '"' << symbol << '"'
                  << " in your grammar since single-characters enclosed in "
-                 << "brackets will eventually be phased out."
-                 << endl;
+                 << "brackets will eventually be phased out." << std::endl;
   }
 
   static bool GetSingleUtf8Label(const string& symbol, int64* label) {
@@ -359,6 +403,7 @@ class StringFst : public Function<Arc> {
             symbol_label_map_.insert(Map::value_type(*symbol, next_label_));
         if (ret.second) {
           label = next_label_++;
+          label_symbol_map_.insert(InverseMap::value_type(label, *symbol));
           VLOG(2) << "Assigned symbol " << *symbol << " to label " << label;
         } else {
           label = ret.first->second;
@@ -383,16 +428,23 @@ class StringFst : public Function<Arc> {
   }
 
   // This function clears the static map for symbols to labels.  This is just to
-  // clean up between test runs.
+  // clean up between test runs. This is somewhat less appropriately named than
+  // it used to be since it clears more than just the symbol_label_map_
   static void ClearSymbolLabelMapForTest() {
     fst::MutexLock lock(&map_mutex_);
 
     symbol_label_map_.clear();
+    label_symbol_map_.clear();
+    remap_.clear();
     next_label_ = FLAGS_generated_label_start_index;
   }
 
   typedef map<string, int64> Map;
   static Map symbol_label_map_;
+  typedef map<int64, string> InverseMap;
+  static InverseMap label_symbol_map_;
+  typedef map<int64, int64> Remap;
+  static Remap remap_;
   static int64 next_label_;
   static fst::Mutex map_mutex_;
 
@@ -405,6 +457,10 @@ class StringFst : public Function<Arc> {
 
 template <typename Arc>
 typename StringFst<Arc>::Map StringFst<Arc>::symbol_label_map_;
+template <typename Arc>
+typename StringFst<Arc>::InverseMap StringFst<Arc>::label_symbol_map_;
+template <typename Arc>
+typename StringFst<Arc>::Remap StringFst<Arc>::remap_;
 template <typename Arc>
 int64 StringFst<Arc>::next_label_ = FLAGS_generated_label_start_index;
 template <typename Arc>

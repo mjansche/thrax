@@ -18,7 +18,7 @@
 #define THRAX_EVALUATOR_H_
 
 #include <string.h>
-#include <iostream>
+#include <iostream> // NOLINT
 #include <map>
 #include <set>
 #include <sstream>
@@ -58,8 +58,9 @@ using std::vector;
 #include <thrax/walker.h>
 #include <thrax/compat/stlfunctions.h>
 
-DECLARE_bool(print_rules);
+DECLARE_bool(always_export);
 DECLARE_bool(optimize_all_fsts);
+DECLARE_bool(print_rules);
 DECLARE_bool(save_symbols);
 DECLARE_string(indir);
 
@@ -86,12 +87,13 @@ class AstEvaluator : public AstWalker {
  public:
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
+  typedef map<int64, int64> LabelMapper;
 
   // This constructor sets up the evaluator to run all nodes using a new
   // environment namespace.
   AstEvaluator()
       : AstWalker(), env_(new Namespace()), id_counter_(NULL), run_all_(true),
-        return_value_(NULL), success_(true) {
+        return_value_(NULL), success_(true), optimize_embedding_(-1) {
     // This primary namespace should be the one that corresponds to the main
     // file being compiled.
     env_->SetTopLevel();
@@ -99,13 +101,14 @@ class AstEvaluator : public AstWalker {
     // If we're parsing the entire file, then we need some space for local
     // variables (as we actually execute the body).
     env_->PushLocalEnvironment();
+
   }
 
   // This constructor will only run import and function nodes, loading them into
   // the provided namespace.
   explicit AstEvaluator(Namespace* env)
       : AstWalker(), env_(env), id_counter_(NULL), run_all_(false),
-        return_value_(NULL), success_(true) {}
+        return_value_(NULL), success_(true), optimize_embedding_(-1) {}
 
   virtual ~AstEvaluator() {
     // We only own the environment if we ran all of the nodes.  Similarly, if we
@@ -129,7 +132,7 @@ class AstEvaluator : public AstWalker {
     return success_;
   }
   void Error(const Node& node, const string& message) {
-    cout << file_ << ":" << node.getline() << ": " << message << endl;
+    std::cout << file_ << ":" << node.getline() << ": " << message << std::endl;
     success_ = false;
   }
 
@@ -153,8 +156,15 @@ class AstEvaluator : public AstWalker {
       // now, and kill them all at the end when we dispose of the grammar
       // compilers.
       bool new_add = env_->InsertWithoutDelete(name, node);
+      observed_function_names_.insert(name);
       CHECK(new_add)
-          ;
+          ; // NOLINT
+    } else {
+      if (observed_function_names_.find(name) !=
+          observed_function_names_.end()) {
+        LOG(WARNING) << "Duplicate function definition within file for "
+                     << name << ". Ignoring.";
+      }
     }
   }
 
@@ -192,8 +202,7 @@ class AstEvaluator : public AstWalker {
 
     // Get (and check) the path of the actual source and far.
     const string& path = JoinPath(FLAGS_indir, node->GetPath()->Get());
-    const char* path_suffix = Suffix(path.c_str());
-    if (!path_suffix || strcmp(path_suffix, "grm")) {
+    if (Suffix(path) != "grm") {
       Error(*node,
             StrCat("Extension for included files should be .grm: ", path));
       return;
@@ -237,22 +246,28 @@ class AstEvaluator : public AstWalker {
       // Success() first, jumping to cleanup on failure.
     }
 
+    // First of all look for the special FST that holds the generated labels
+    // symbol table.  We must process that first so that we can know if any of
+    // the labels on the incoming FSTs need to be reset.
+    if (far_reader->Find(kStringFstSymtabFst)) {
+      // First clear the remap, since any remappings that need to be done only
+      // safely apply to the current FAR.
+      function::StringFst<Arc>::ClearRemap();
+      if (!function::StringFst<Arc>::MergeLabelSymbolTable(
+              *far_reader->GetFst().InputSymbols())) {
+        Error(*node, "Failed to merge symbol tables");
+        // We can gracefully exit this loop when success_ becomes false and do
+        // the necessary cleanup afterwards.
+      }
+      far_reader->Reset();
+    }
     // Then, add the FSTs to that namespace.  We'll loop through the reader, but
     // quit if we ever have an error.
     for (/* far_reader starts at the beginning */;
          Success() && !far_reader->Done(); far_reader->Next()) {
       const string& key = far_reader->GetKey();
-
       if (key == kStringFstSymtabFst) {
-        // In this case, we've found the special FST that holds the generated
-        // labels symbol table.  We need to merge that into the known labels for
-        // the StringFst function.
-        if (!function::StringFst<Arc>::MergeLabelSymbolTable(
-            *far_reader->GetFst().InputSymbols())) {
-          Error(*node, "Failed to merge symbol tables");
-          // We can gracefully exit this loop when success_ becomes false and do
-          // the necessary cleanup afterwards.
-        }
+        continue;
       } else {
         // Otherwise, we just have a normal exported FST.  So we can just add it
         // into the variables.
@@ -260,11 +275,12 @@ class AstEvaluator : public AstWalker {
         if (!env_->Get<DataType>(key_inode)) {  // Add only if new.
           // Must be mutable for now in case we need to change the symbol table.
           MutableTransducer tmpfst(far_reader->GetFst());
+          RemapGeneratedLabels(&tmpfst);
           ReassignSymbols(&tmpfst);
           Transducer* fst = tmpfst.Copy();
           bool new_add = env_->Insert(key, new DataType(fst));
           CHECK(new_add)
-              ;
+              ; // NOLINT
         }
       }
     }
@@ -302,7 +318,7 @@ class AstEvaluator : public AstWalker {
 
     IdentifierNode* identifier = node->GetName();
     if (FLAGS_print_rules)
-      cout << "Evaluating rule: " << identifier->Get() << endl;
+      std::cout << "Evaluating rule: " << identifier->Get() << std::endl;
     if (identifier->HasNamespaces()) {
       Error(*identifier,
             StrCat("Cannot assign to an identifier within a namespace: ",
@@ -322,9 +338,9 @@ class AstEvaluator : public AstWalker {
     if (node->ShouldExport()) {
       if (env_->LocalEnvironmentDepth() == 1) {
         exported_fsts_.insert(identifier);
-      } else {
+      } else if (!FLAGS_always_export) {
         Error(*identifier,
-              StrCat("Varibles may only be exported from the top-level "
+              StrCat("Variables may only be exported from the top-level "
                      "grammar: ", name));
         return;
       }
@@ -361,7 +377,7 @@ class AstEvaluator : public AstWalker {
   // grammar). This information gets passed down ultimately to StringFst's
   // GetLabelSymbolTable to determine (assuming --save_symbols is set), whether
   // or not to add generated labels to the byte and utf8 symbol tables.
-  void GetFsts(map<string, Transducer*>* fsts, bool top_level) {
+  void GetFsts(map<string, const Transducer*>* fsts, bool top_level) {
     // Check if we ever used generated labels.  If so, get the symbol table and
     // add it to a unique FST called kStringFstSymtabFst.
     fst::SymbolTable* generated_labels =
@@ -376,7 +392,21 @@ class AstEvaluator : public AstWalker {
     // Get the exported FSTs and add them to the map.
     for (set<IdentifierNode*>::const_iterator fst_i = exported_fsts_.begin();
          fst_i != exported_fsts_.end(); ++fst_i) {
-      VLOG(1) << "Expanding FST: " << (*fst_i)->Get();
+      const string& name = (*fst_i)->Get();
+      // If always_export is set, an imported function, which in turn contains
+      // a named fst variable, will have that variable exported when the
+      // function is expanded in the top-level grammar, but that fst is not
+      // really part of the top-level environment, so it fails to find it
+      // here and will die. The choices are to try to make the compilation more
+      // clever about this in the first place, which is hairy, or catch it
+      // here.
+      if (env_->Get<DataType>(**fst_i) == nullptr) {
+        LOG(WARNING) << "Cannot find exportable fst with name "
+                     << name
+                     << ": ignoring.";
+        continue;
+      }
+      VLOG(1) << "Expanding FST: " << name;
       if (!env_->Get<DataType>(**fst_i)->is<Transducer*>()) {
         Error(**fst_i,
               StrCat("Cannot export non-FST variable: ", (*fst_i)->Get()));
@@ -554,6 +584,8 @@ class AstEvaluator : public AstWalker {
       }
       case FstNode::COMPOSITION_FSTNODE: {
         VLOG(2) << "Composition Fst:";
+        if (optimize_embedding_ > -1) optimize_embedding_++;
+        if (optimize_embedding_ > 1) node->SetOptimize();
         vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
         args->push_back(new DataType("right"));  // ArcSort the right FST.
         CHECK(MakeFstFromCFunction("Compose", *node, args, &output));
@@ -609,7 +641,9 @@ class AstEvaluator : public AstWalker {
       case FstNode::FUNCTION_FSTNODE: {
         IdentifierNode* func_identifier_node =
             static_cast<IdentifierNode*>(node->GetArgument(0));
-        VLOG(2) << "Function Call Fst: " << func_identifier_node->Get();
+        const string& name = func_identifier_node->Get();
+        VLOG(2) << "Function Call Fst: " << name;
+        if (name == "Optimize") optimize_embedding_ = 0;
 
         vector<DataType*>* args = GetArgumentsFromCollectionNode(
             static_cast<CollectionNode*>(node->GetArgument(1)));
@@ -650,6 +684,9 @@ class AstEvaluator : public AstWalker {
           return NULL;
         }
 
+        // Now that we are done, set the optimize_embedding_ setting back to the
+        // default.
+        optimize_embedding_ = -1;
         break;
       }
       default: {
@@ -665,20 +702,23 @@ class AstEvaluator : public AstWalker {
         Transducer* unweighted_fst = *output->get<Transducer*>();
         Transducer* weighted_fst =
             AttachWeight(*unweighted_fst, node->GetWeight());
-
         delete output;
         output = new DataType(weighted_fst);
       }
 
-      // Now, we might wish to always optimize the FSTs.
-      if (FLAGS_optimize_all_fsts) {
+      // Now, we might wish to always optimize the FSTs, or the node is slated
+      // to be optimized (e.g. a composition node within an Optimize
+      // FUNCTION_FSTNODE).
+      if (FLAGS_optimize_all_fsts || node->ShouldOptimize()) {
         Transducer* optimized_fst = function::Optimize<Arc>::ActuallyOptimize(
             **output->get<Transducer*>());
         delete output;
         output = new DataType(optimized_fst);
+        // This is the interesting case to be able to keep track of.
+        if (node->ShouldOptimize())
+          VLOG(2) << "Optimizing at line " << node->getline();
       }
     }
-
     return output;
   }
 
@@ -749,6 +789,24 @@ class AstEvaluator : public AstWalker {
     }
   }
 
+  // Remap the generated labels of this fst using a StringFst's remap
+  void RemapGeneratedLabels(MutableTransducer* fst) {
+    for (fst::StateIterator<MutableTransducer> siter(*fst);
+         !siter.Done();
+         siter.Next()) {
+      typename Arc::StateId s = siter.Value();
+      for (fst::MutableArcIterator<MutableTransducer> aiter(fst, s);
+           !aiter.Done();
+           aiter.Next()) {
+        Arc arc = aiter.Value();
+        int64 label = function::StringFst<Arc>::FindRemapLabel(arc.ilabel);
+        if (label != fst::kNoLabel) arc.ilabel = label;
+        label = function::StringFst<Arc>::FindRemapLabel(arc.olabel);
+        if (label != fst::kNoLabel) arc.olabel = label;
+        aiter.SetValue(arc);
+      }
+    }
+  }
 
   Namespace* env_;
   AstIdentifierCounter* id_counter_;
@@ -777,6 +835,15 @@ class AstEvaluator : public AstWalker {
 
   // Name of file that we're currently evaluating.
   string file_;
+
+  // Level of embedding under Optimize[] of a composition. If it is more than 1,
+  // then optimize the composition. (If it is 1, then it's at the top level
+  // under the Optimize[] and it will be optimized anyway.
+  int optimize_embedding_;
+
+  // Used in the evaluator to keep track of whether the same function name has
+  // been defined in the current file more than once.
+  set<string> observed_function_names_;
 
   DISALLOW_COPY_AND_ASSIGN(AstEvaluator<Arc>);
 };

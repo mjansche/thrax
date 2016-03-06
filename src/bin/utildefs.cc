@@ -40,7 +40,7 @@ bool VisitState(const Transducer& fst,
                 float cost,
                 vector<pair<string, float> >* paths) {
   if (fst.Final(state) != StdArc::Weight::Zero()) {
-    paths->push_back(make_pair(path, cost + fst.Final(state).Value()));
+    paths->push_back(std::make_pair(path, cost + fst.Final(state).Value()));
   }
   fst::ArcIterator<Transducer> aiter(fst, state);
   for (; !aiter.Done(); aiter.Next()) {
@@ -104,7 +104,7 @@ bool FstToStrings(const Transducer& fst,
 
 const fst::SymbolTable*
 GetGeneratedSymbolTable(GrmManagerSpec<StdArc>* grm) {
-  fst::Fst<StdArc>* symbolfst = grm->GetFst("*StringFstSymbolTable");
+  const fst::Fst<StdArc>* symbolfst = grm->GetFst("*StringFstSymbolTable");
   if (symbolfst) {
     Transducer mutable_symbolfst(*symbolfst);
     return mutable_symbolfst.InputSymbols()->Copy();

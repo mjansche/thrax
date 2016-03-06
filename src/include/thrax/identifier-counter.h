@@ -20,7 +20,6 @@
 #define THRAX_IDENTIFIER_COUNTER_H_
 
 #include <unordered_map>
-using std::unordered_map;
 #include <string>
 
 #include <fst/compat.h>
@@ -77,7 +76,7 @@ class AstIdentifierCounter : public AstWalker {
  private:
   // A map of references from the identifier name to the number of times it's
   // used.
-  unordered_map<string, int> references_;
+  std::unordered_map<string, int> references_;
 
   // A boolean to tell us whether the next IdentifierNode we encounter is
   // exported (and thus should have a reference count of infinity (-1)).

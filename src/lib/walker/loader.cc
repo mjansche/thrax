@@ -16,8 +16,8 @@
 
 #include <string>
 
-#include <thrax/assert-equal.h>
 #include <thrax/arcsort.h>
+#include <thrax/assert-equal.h>
 #include <thrax/cdrewrite.h>
 #include <thrax/closure.h>
 #include <thrax/compose.h>
@@ -32,10 +32,12 @@
 #include <thrax/loadfst.h>
 #include <thrax/loadfstfromfar.h>
 #include <thrax/minimize.h>
+#include <thrax/mpdtcompose.h>
 #include <thrax/optimize.h>
 #include <thrax/paradigm.h>
 #include <thrax/pdtcompose.h>
 #include <thrax/project.h>
+#include <thrax/replace.h>
 #include <thrax/reverse.h>
 #include <thrax/rewrite.h>
 #include <thrax/rmepsilon.h>
@@ -68,10 +70,12 @@ void RegisterFunctions() {
   REGISTER_GRM_FUNCTION(LoadFst);
   REGISTER_GRM_FUNCTION(LoadFstFromFar);
   REGISTER_GRM_FUNCTION(Minimize);
+  REGISTER_GRM_FUNCTION(MPdtCompose);
   REGISTER_GRM_FUNCTION(Optimize);
   REGISTER_GRM_FUNCTION(ParadigmReplace);
   REGISTER_GRM_FUNCTION(PdtCompose);
   REGISTER_GRM_FUNCTION(Project);
+  REGISTER_GRM_FUNCTION(Replace);
   REGISTER_GRM_FUNCTION(Reverse);
   REGISTER_GRM_FUNCTION(Rewrite);
   REGISTER_GRM_FUNCTION(RmEpsilon);
@@ -81,26 +85,6 @@ void RegisterFunctions() {
   REGISTER_GRM_FUNCTION(Tagger);
   REGISTER_GRM_FUNCTION(Union);
   REGISTER_GRM_FUNCTION(UnionDelayed);
-}
-
-// Needed for symbol table functionality built into symbols.h
-
-SymbolTableBuilder kSymbolTableBuilder;
-
-fst::SymbolTable* GetByteSymbolTable() {
-  return kSymbolTableBuilder.GetByteSymbolTable();
-}
-
-fst::SymbolTable* GetUtf8SymbolTable() {
-  return kSymbolTableBuilder.GetUtf8SymbolTable();
-}
-
-void AddToByteSymbolTable(string symbol, int64 label) {
-  kSymbolTableBuilder.AddToByteSymbolTable(symbol, label);
-}
-
-void AddToUtf8SymbolTable(string symbol, int64 label) {
-  kSymbolTableBuilder.AddToUtf8SymbolTable(symbol, label);
 }
 
 }  // namespace function

@@ -17,6 +17,7 @@
 
 #include <iostream>
 #include <string>
+#include <sstream>
 
 #include <thrax/collection-node.h>
 #include <thrax/fst-node.h>
@@ -32,8 +33,7 @@
 
 namespace thrax {
 
-AstPrinter::AstPrinter()
-    : num_spaces_(0), out(cout) {}
+AstPrinter::AstPrinter() : num_spaces_(0), out(std::cout) {}
 
 AstPrinter::AstPrinter(ostream& output_stream)
     : num_spaces_(0), out(output_stream) {}
@@ -41,52 +41,51 @@ AstPrinter::AstPrinter(ostream& output_stream)
 AstPrinter::~AstPrinter() {}
 
 void AstPrinter::Visit(CollectionNode* node) {
-  out << Spaces() << "CollectionNode" << endl;
+  out << Spaces(node) << "CollectionNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
   for (int i = 0; i < node->Size(); ++i)
     (*node)[i]->Accept(this);
 }
 
 void AstPrinter::Visit(FstNode* node) {
-  out << Spaces() << "FstNode" << endl;
+  out << Spaces(node) << "FstNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
-  out << Spaces() << "Type: " << FstNode::FstNodeTypeToString(node->GetType())
-      << endl;
+  out << Spaces(node)
+      << "Type: " << FstNode::FstNodeTypeToString(node->GetType()) << std::endl;
 
   // Handle subtype specific logic.
   if (node->GetType() == FstNode::STRING_FSTNODE) {
     StringFstNode* snode = static_cast<StringFstNode*>(node);
-    out << Spaces() << "Parsing: ";
+    out << Spaces(node) << "Parsing: ";
     if (snode->GetParseMode() == StringFstNode::BYTE)
-      out << "BYTE" << endl;
+      out << "BYTE" << std::endl;
     else if (snode->GetParseMode() == StringFstNode::UTF8)
-      out << "UTF8" << endl;
+      out << "UTF8" << std::endl;
     else
-      out << "SYMBOL_TABLE" << endl;
+      out << "SYMBOL_TABLE" << std::endl;
   } else if (node->GetType() == FstNode::REPETITION_FSTNODE) {
     RepetitionFstNode* rnode = static_cast<RepetitionFstNode*>(node);
-    out << Spaces() << "Subtype: "
-        << RepetitionFstNode::RepetitionFstNodeTypeToString(
-               rnode->GetRepetitionType())
-        << endl;
+    out << Spaces(node)
+        << "Subtype: " << RepetitionFstNode::RepetitionFstNodeTypeToString(
+                              rnode->GetRepetitionType()) << std::endl;
     if (rnode->GetRepetitionType() == RepetitionFstNode::RANGE) {
       int min, max;
       rnode->GetRange(&min, &max);
-      out << Spaces() << "Range: " << min << " to " << max << endl;
+      out << Spaces(node) << "Range: " << min << " to " << max << std::endl;
     }
   }
 
   if (node->NumArguments() > 0) {
-    out << Spaces() << "Arguments:" << endl;
+    out << Spaces(node) << "Arguments:" << std::endl;
     for (int i = 0; i < node->NumArguments(); ++i)
       node->GetArgument(i)->Accept(this);
   }
   if (node->HasWeight())
-    out << Spaces() << "Weight: " << node->GetWeight() << endl;
+    out << Spaces(node) << "Weight: " << node->GetWeight() << std::endl;
 }
 
 void AstPrinter::Visit(FunctionNode* node) {
-  out << Spaces() << "FunctionNode" << endl;
+  out << Spaces(node) << "FunctionNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
   node->GetName()->Accept(this);
   node->GetArguments()->Accept(this);
@@ -94,26 +93,26 @@ void AstPrinter::Visit(FunctionNode* node) {
 }
 
 void AstPrinter::Visit(GrammarNode* node) {
-  out << Spaces() << "GrammarNode" << endl;
+  out << Spaces(node) << "GrammarNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
-  out << Spaces() << "Imports:" << endl;
+  out << Spaces(node) << "Imports:" << std::endl;
   node->GetImports()->Accept(this);
-  out << Spaces() << "Functions:" << endl;
+  out << Spaces(node) << "Functions:" << std::endl;
   node->GetFunctions()->Accept(this);
-  out << Spaces() << "Statements:" << endl;
+  out << Spaces(node) << "Statements:" << std::endl;
   node->GetStatements()->Accept(this);
 }
 
 void AstPrinter::Visit(IdentifierNode* node) {
-  out << Spaces() << "IdentifierNode: " << node->Get() << endl;
+  out << Spaces(node) << "IdentifierNode: " << node->Get() << std::endl;
 }
 
 void AstPrinter::Visit(ImportNode* node) {
-  out << Spaces() << "ImportNode" << endl;
+  out << Spaces(node) << "ImportNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
-  out << Spaces() << "Path:" << endl;
+  out << Spaces(node) << "Path:" << std::endl;
   node->GetPath()->Accept(this);
-  out << Spaces() << "Alias:" << endl;
+  out << Spaces(node) << "Alias:" << std::endl;
   node->GetAlias()->Accept(this);
 }
 
@@ -123,21 +122,21 @@ void AstPrinter::Visit(RepetitionFstNode* node) {
 }
 
 void AstPrinter::Visit(ReturnNode* node) {
-  out << Spaces() << "ReturnNode" << endl;
+  out << Spaces(node) << "ReturnNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
   node->Get()->Accept(this);
 }
 
 void AstPrinter::Visit(RuleNode* node) {
-  out << Spaces() << "RuleNode"
-      << (node->ShouldExport() ? " (exported)" : "") << endl;
+  out << Spaces(node) << "RuleNode"
+      << (node->ShouldExport() ? " (exported)" : "") << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
   node->GetName()->Accept(this);
   node->Get()->Accept(this);
 }
 
 void AstPrinter::Visit(StatementNode* node) {
-  out << Spaces() << "StatementNode" << endl;
+  out << Spaces(node) << "StatementNode" << std::endl;
   ScopedSpaceCounter ssc(&num_spaces_);
   node->Get()->Accept(this);
 }
@@ -148,16 +147,19 @@ void AstPrinter::Visit(StringFstNode* node) {
 }
 
 void AstPrinter::Visit(StringNode* node) {
-  out << Spaces() << "StringNode: " << node->Get() << endl;
+  out << Spaces(node) << "StringNode: " << node->Get() << std::endl;
 }
 
-string AstPrinter::Spaces() const {
+string AstPrinter::Spaces(Node *node) const {
   string output;
   for (int i = 0; i < num_spaces_; ++i) {
     if (i != num_spaces_ - 1)
       output += "|   ";
     else
       output += "|-- ";
+  }
+  if (include_line_numbers) {
+    output += std::to_string(node->getline()) + "-";
   }
   return output;
 }

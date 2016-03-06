@@ -20,6 +20,7 @@
 #ifndef THRAX_MAKE_PARENS_PAIR_VECTOR_H_
 #define THRAX_MAKE_PARENS_PAIR_VECTOR_H_
 
+#include <map>
 #include <set>
 #include <vector>
 using std::vector;
@@ -70,6 +71,48 @@ inline void MakeParensPairVector(
       }
       aiter.Next();
     }
+  }
+}
+
+// For extracting MPDT assignments
+template <typename Arc>
+inline void MakeAssignmentsVector(
+    const fst::VectorFst<Arc>& assignments_transducer,
+    const vector<pair<typename Arc::Label, typename Arc::Label> >& parens,
+    vector<typename Arc::Label>* assignments) {
+  map<typename Arc::Label, typename Arc::Label> assignment_map;
+  typename map<typename Arc::Label, typename Arc::Label>::iterator iter;
+  for (typename Arc::StateId s = 0;
+       s < assignments_transducer.NumStates();
+       ++s) {
+    fst::ArcIterator<fst::VectorFst<Arc> >
+        aiter(assignments_transducer, s);
+    while (!aiter.Done()) {
+      const Arc& arc = aiter.Value();
+      if (!arc.ilabel && !arc.olabel) {
+      } else if (!arc.ilabel) {
+        LOG(WARNING) << "MPdtCompose: left parenthesis"
+                     << "corresponding to assignment "
+                     << arc.olabel << " is null";
+      } else if (!arc.olabel) {
+        LOG(WARNING) << "MPdtCompose: assignment corresponding"
+                     << " to left parenthesis "
+                     << arc.ilabel << " is null";
+        continue;
+      } else {
+        assignment_map[arc.ilabel] = arc.olabel;
+      }
+      aiter.Next();
+    }
+  }
+  for (int i = 0; i < parens.size(); ++i) {
+    typename Arc::Label iparen = parens[i].first;
+    iter = assignment_map.find(iparen);
+    if (iter == assignment_map.end())
+      LOG(FATAL) << "MPdtCompose: left parenthesis "
+                 << iparen
+                 << " has no stack assignment.";
+    assignments->push_back(iter->second);
   }
 }
 

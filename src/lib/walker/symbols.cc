@@ -24,6 +24,26 @@ using std::vector;
 namespace thrax {
 namespace function {
 
+// Needed for symbol table functionality built into symbols.h
+
+SymbolTableBuilder kSymbolTableBuilder;
+
+fst::SymbolTable* GetByteSymbolTable() {
+  return kSymbolTableBuilder.GetByteSymbolTable();
+}
+
+fst::SymbolTable* GetUtf8SymbolTable() {
+  return kSymbolTableBuilder.GetUtf8SymbolTable();
+}
+
+void AddToByteSymbolTable(string symbol, int64 label) {
+  kSymbolTableBuilder.AddToByteSymbolTable(symbol, label);
+}
+
+void AddToUtf8SymbolTable(string symbol, int64 label) {
+  kSymbolTableBuilder.AddToUtf8SymbolTable(symbol, label);
+}
+
 inline bool IsUnicodeSpaceOrControl(int c) {
   // Replicates functionality in the ICU library for determining whether the
   // character type is control or whitespace. Specifically:

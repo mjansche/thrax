@@ -15,7 +15,7 @@ endif
 
 thraxcompiler_SOURCES = compiler.cc
 
-thraxrewrite_tester_SOURCES = rewrite-tester.cc utildefs.cc utildefs.h
+thraxrewrite_tester_SOURCES = rewrite-tester.cc rewrite-tester-utils.cc rewrite-tester-utils.h utildefs.cc utildefs.h
 
 thraxrandom_generator_SOURCES = random-generator.cc utildefs.cc utildefs.h
 endif

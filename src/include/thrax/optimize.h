@@ -56,8 +56,9 @@ class Optimize : public UnaryFstFunction<Arc> {
     fst::StateMap(output, fst::ArcSumMapper<Arc>(*output));
     if (!(Arc::Weight::Properties() & fst::kIdempotent))
       return output;
-
     if (output->Properties(fst::kAcceptor, false) != fst::kAcceptor) {
+      // If the FST is not known to be an acceptor (i.e., may be a transducer),
+      // we encode both labels and weights before determinization/minimization.
       fst::EncodeMapper<Arc> encoder(
           fst::kEncodeLabels | fst::kEncodeWeights, fst::ENCODE);
       fst::Encode(output, &encoder);
@@ -66,12 +67,34 @@ class Optimize : public UnaryFstFunction<Arc> {
       fst::Minimize(output);
       fst::Decode(output, encoder);
     } else {
+      // Otherwise, the FST is an acceptor. We now check whether the FST is
+      // known to be deterministic.
       if (output->Properties(fst::kIDeterministic, false) !=
           fst::kIDeterministic) {
-        MutableTransducer ifst(*output);
-        fst::Determinize(ifst, output);
+        if (!output->Properties(fst::kAcyclic | fst::kUnweighted,
+                                false)) {
+          // If the (possibly) nondeterministic acceptor is (possibly) weighted
+          // and cyclic, we encode weights before determinization/minimization.
+          fst::EncodeMapper<Arc> encoder(fst::kEncodeWeights,
+                                             fst::ENCODE);
+          fst::Encode(output, &encoder);
+          MutableTransducer ifst(*output);
+          fst::Determinize(ifst, output);
+          fst::Minimize(output);
+          fst::Decode(output, encoder);
+        } else {
+          // If the (possibly) nondeterministic acceptor is not weighted and
+          // cyclic, we do not encode before determinization/minimization.
+          MutableTransducer ifst(*output);
+          fst::Determinize(ifst, output);
+          fst::Minimize(output);
+        }
       }
-      fst::Minimize(output);
+      else {
+        // We directly minimize a deterministic acceptor; we do not need
+        // to encode or determinize beforehand.
+        fst::Minimize(output);
+      }
     }
     fst::StateMap(output, fst::ArcSumMapper<Arc>(*output));
     return output;
@@ -81,7 +104,8 @@ class Optimize : public UnaryFstFunction<Arc> {
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
                                       const vector<DataType*>& args) {
     if (args.size() != 1) {
-      cout << "Optimize: Expected 1 argument but got " << args.size() << endl;
+      std::cout << "Optimize: Expected 1 argument but got " << args.size()
+                << std::endl;
       return NULL;
     }
 

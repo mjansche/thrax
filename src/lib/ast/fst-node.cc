@@ -26,7 +26,7 @@ using std::vector;
 namespace thrax {
 
 FstNode::FstNode(FstNodeType type)
-    : Node(), type_(type), weight_(NULL) {}
+    : Node(), type_(type), weight_(NULL), optimize_(false) {}
 
 FstNode::~FstNode() {
   STLDeleteContainerPointers(arguments_.begin(), arguments_.end());
@@ -65,6 +65,13 @@ bool FstNode::HasWeight() const {
 }
 const string& FstNode::GetWeight() const {
   return weight_->Get();
+}
+
+const bool FstNode::ShouldOptimize() const {
+  return optimize_;
+}
+void FstNode::SetOptimize() {
+  optimize_ = true;
 }
 
 void FstNode::Accept(AstWalker* walker) {

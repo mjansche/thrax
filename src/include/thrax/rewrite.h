@@ -102,7 +102,8 @@ class Rewrite : public BinaryFstFunction<Arc> {
                                        const Transducer& right,
                                        const vector<DataType*>& args) {
     if (args.size() != 2) {
-      cout << "Rewrite: Expected 2 arguments but got " << args.size() << endl;
+      std::cout << "Rewrite: Expected 2 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
@@ -113,10 +114,9 @@ class Rewrite : public BinaryFstFunction<Arc> {
         (!left.Properties(fst::kAcceptor, true) ||
          !right.Properties(fst::kAcceptor, true))) {
       if (!CompatSymbols(left.OutputSymbols(), right.InputSymbols())) {
-        cout << "Rewrite: output symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument "
-             << "and at least one is not an acceptor"
-             << endl;
+        std::cout << "Rewrite: output symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument "
+                  << "and at least one is not an acceptor" << std::endl;
         return NULL;
       }
     }

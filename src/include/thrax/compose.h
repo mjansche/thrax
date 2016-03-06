@@ -56,13 +56,13 @@ class Compose : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     if (args.size() != 2 && args.size() != 3) {
-      cout << "Compose: Expected 2 or 3 arguments but got " << args.size()
-           << endl;
+      std::cout << "Compose: Expected 2 or 3 arguments but got " << args.size()
+                << std::endl;
       return NULL;
     }
 
     if (!args[0]->is<Transducer*>() || !args[1]->is<Transducer*>()) {
-      cout << "Compose: First two arguments should be FSTs" << endl;
+      std::cout << "Compose: First two arguments should be FSTs" << std::endl;
       return NULL;
     }
     const Transducer* left = *args[0]->get<Transducer*>();
@@ -71,22 +71,23 @@ class Compose : public Function<Arc> {
 
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left->OutputSymbols(), right->InputSymbols())) {
-        cout << "Compose: output symbol table of 1st argument "
-             << "does not match input symbol table of 2nd argument"
-             << endl;
+        std::cout << "Compose: output symbol table of 1st argument "
+                  << "does not match input symbol table of 2nd argument"
+                  << std::endl;
         return NULL;
       }
     }
 
     if (args.size() == 3) {
       if (!args[2]->is<string>()) {
-        cout << "Compose: Expected string for argument 3" << endl;
+        std::cout << "Compose: Expected string for argument 3" << std::endl;
         return NULL;
       }
       const string& sort_mode = *args[2]->get<string>();
       if (sort_mode != "left" && sort_mode != "right" && sort_mode != "both") {
-        cout << "Compose: Expected 'left', 'right', or 'both' for argument 3"
-             << endl;
+        std::cout
+            << "Compose: Expected 'left', 'right', or 'both' for argument 3"
+            << std::endl;
         return NULL;
       }
 

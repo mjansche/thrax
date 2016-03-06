@@ -86,7 +86,7 @@ int main(int argc, char** argv) {
   }
   if (FLAGS_rule.empty())
     LOG(FATAL) << "--rule must be specified";
-  fst::Fst<StdArc>* fst = grm.GetFst(FLAGS_rule);
+  const fst::Fst<StdArc>* fst = grm.GetFst(FLAGS_rule);
   if (!fst) {
     LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
                << FLAGS_rule;
@@ -116,13 +116,13 @@ int main(int argc, char** argv) {
     }
   }
   for (int i = 0; i < istrings.size(); ++i) {
-    cout << "****************************************" << endl;
-    cout << istrings[i].first << endl
-         << ostrings[i].first << endl;
+    std::cout << "****************************************" << std::endl;
+    std::cout << istrings[i].first << std::endl << ostrings[i].first
+              << std::endl;
     // TODO(rws): Currently there is an issue that RandGen() removes weights, so
     // we'll never actually see these costs.
     if (istrings[i].second != 0)
-      cout << " <cost=" << istrings[i].second << ">" << endl;
+      std::cout << " <cost=" << istrings[i].second << ">" << std::endl;
   }
   delete output_symtab;
   return 0;

@@ -147,7 +147,7 @@ class Feature : public Function<Arc> {
     const fst::SymbolTable* symtab = NULL;
     // First argument is the name of the feature
     if (!args[0]->is<string>()) {
-      cout << "Feature: First argument must be string" << endl;
+      std::cout << "Feature: First argument must be string" << std::endl;
       return NULL;
     }
     const string& feature_name = *args[0]->get<string>();
@@ -156,8 +156,8 @@ class Feature : public Function<Arc> {
     // could be ... see below
     for (int i = 1; i < args.size() - 1; ++i) {
       if (!args[i]->is<string>()) {
-        cout << "Feature: All arguments except last must be strings (arg "
-             << i + 1 << ")" << endl;
+        std::cout << "Feature: All arguments except last must be strings (arg "
+                  << i + 1 << ")" << std::endl;
         return NULL;
       }
       feature_values.push_back(*args[i]->get<string>());
@@ -190,7 +190,8 @@ class Feature : public Function<Arc> {
         feature_values.push_back(arg);
       }
     } else {
-      cout << "Feature: final argument must be string or symbol table" << endl;
+      std::cout << "Feature: final argument must be string or symbol table"
+                << std::endl;
     }
     MutableTransducer* fst(new MutableTransducer());
     // Feature acceptors have two states, with 0 the initial, 1, the final, and
@@ -208,8 +209,8 @@ class Feature : public Function<Arc> {
       int64 label;
       if (!StringFst<Arc>::SymbolToGeneratedLabel(
               feature_value_pair, &label)) {
-        cout << "Failed to generate label for " << feature_value_pair
-             << endl;
+        std::cout << "Failed to generate label for " << feature_value_pair
+                  << std::endl;
         delete fst;
         return NULL;
       }
@@ -250,22 +251,25 @@ class Feature : public Function<Arc> {
       MutableTransducer* fst,
       vector<pair<typename Arc::StateId, string> >* features) {
     if (!fst->Properties(fst::kAcceptor | fst::kAcyclic, true)) {
-      cout << "Feature/value sequence automaton must be an acyclic acceptor"
-           << endl;
+      std::cout
+          << "Feature/value sequence automaton must be an acyclic acceptor"
+          << std::endl;
       return false;
     }
     typename Arc::StateId s = fst->Start();
     if (fst->Final(s) != Arc::Weight::Zero()) {
-      cout << "Feature/value sequence automaton's initial state cannot be final"
-           << endl;
+      std::cout
+          << "Feature/value sequence automaton's initial state cannot be final"
+          << std::endl;
       return false;
     }
     const fst::SymbolTable* generated_symbols =
         StringFst<Arc>::GetLabelSymbolTable(false);
     while (fst->Final(s) == Arc::Weight::Zero()) {
       if (fst->NumArcs(s) <= 0) {
-        cout << "Feature/value sequence automaton must have at least one arc "
-             << "from every state" << endl;
+        std::cout
+            << "Feature/value sequence automaton must have at least one arc "
+            << "from every state" << std::endl;
         return false;
       }
       fst::ArcIterator<MutableTransducer> aiter(*fst, s);
@@ -276,17 +280,17 @@ class Feature : public Function<Arc> {
         if (nextstate == fst::kNoStateId) {
           nextstate = arc.nextstate;
         } else if (nextstate != arc.nextstate) {
-          cout << "Every arc in a feature/value sequence automaton from state "
-               << "s1 must transition to the same s0"
-               << endl;
+          std::cout
+              << "Every arc in a feature/value sequence automaton from state "
+              << "s1 must transition to the same s0" << std::endl;
           delete generated_symbols;
           return false;
         }
         string featval = generated_symbols->Find(arc.ilabel);
         string this_feature;
         if (!SplitFeatureValue(featval, &this_feature)) {
-          cout << "Feature/value automaton's arcs must all "
-               << "be of the form x=y (" << featval << ")" << endl;
+          std::cout << "Feature/value automaton's arcs must all "
+                    << "be of the form x=y (" << featval << ")" << std::endl;
           delete generated_symbols;
           return false;
         }
@@ -296,8 +300,8 @@ class Feature : public Function<Arc> {
           feature = this_feature;
         } else {
           if (feature != this_feature) {
-            cout << "The feature name must be the same for all values ("
-                 << featval << ")" << endl;
+            std::cout << "The feature name must be the same for all values ("
+                      << featval << ")" << std::endl;
             delete generated_symbols;
             return false;
           }
@@ -309,8 +313,9 @@ class Feature : public Function<Arc> {
     }
     delete generated_symbols;
     if (fst->NumArcs(s) >0) {
-      cout << "The final state of a feature/value sequence automaton must not "
-           << "have any exiting arcs" << endl;
+      std::cout
+          << "The final state of a feature/value sequence automaton must not "
+          << "have any exiting arcs" << std::endl;
       return false;
     }
     return true;
@@ -323,7 +328,8 @@ class Feature : public Function<Arc> {
   // shared across the arcs.
   static bool ValidateFeatureFst(MutableTransducer* fst, string* feature) {
     if (fst->NumStates() != 2) {
-      cout << "Feature/value automaton must have exactly two states" << endl;
+      std::cout << "Feature/value automaton must have exactly two states"
+                << std::endl;
       return false;
     }
     vector<pair<typename Arc::StateId, string> > features;
@@ -368,8 +374,8 @@ class Category : public Function<Arc> {
     vector<pair<string, Transducer*> > features;
     for (int i = 0; i < args.size(); ++i) {
       if (!args[i]->is<Transducer*>()) {
-        cout << "Category: All arguments must be Feature fsts (arg "
-             << i + 1 << ")" << endl;
+        std::cout << "Category: All arguments must be Feature fsts (arg "
+                  << i + 1 << ")" << std::endl;
         return NULL;
       }
       MutableTransducer* feature_fst =
@@ -380,7 +386,7 @@ class Category : public Function<Arc> {
     }
     // Features in a category are kept sorted by the byte sort order of the
     // feature name.
-    sort(features.begin(), features.end());
+    std::sort(features.begin(), features.end());
     MutableTransducer* fst = new MutableTransducer;
     typename Arc::StateId s0 = fst->AddState();
     fst->SetStart(s0);
@@ -429,8 +435,8 @@ class FeatureVector : public Function<Arc> {
     // in which case we just get back an acceptor equivalent to the Category.
     CHECK_GE(args.size(), 1);
     if (!args[0]->is<Transducer*>()) {
-        cout << "FeatureVector: First argument must be a Category fst"
-             << endl;
+      std::cout << "FeatureVector: First argument must be a Category fst"
+                << std::endl;
         return NULL;
     }
     MutableTransducer* category_fst =
@@ -438,8 +444,8 @@ class FeatureVector : public Function<Arc> {
     vector<pair<typename Arc::StateId, string> > features;
     if (!Category<Arc>::ValidateFeatureSequenceFst(category_fst,
                                                    &features)) {
-      cout << "FeatureVector: First argument must be a Category fst"
-           << endl;
+      std::cout << "FeatureVector: First argument must be a Category fst"
+                << std::endl;
       return NULL;
     }
     // There should be no more feature value pairs than possible for this
@@ -447,7 +453,7 @@ class FeatureVector : public Function<Arc> {
     // number of states is the number of feature value pairs plus one, this is
     // the right comparison
     if (args.size() > category_fst->NumStates()) {
-      cout << "Too many feature/value pairs specified" << endl;
+      std::cout << "Too many feature/value pairs specified" << std::endl;
       return NULL;
     }
     const fst::SymbolTable* generated_symbols =
@@ -455,22 +461,23 @@ class FeatureVector : public Function<Arc> {
     map <string, int64> feature_label_pairs;
     for (int i = 1; i < args.size(); ++i) {
       if (!args[i]->is<string>()) {
-        cout << "Feature/value pairs must strings be of the form x=y" << endl;
+        std::cout << "Feature/value pairs must strings be of the form x=y"
+                  << std::endl;
         delete generated_symbols;
         return NULL;
       }
       string featval = *args[i]->get<string>();
       string feature;
       if (!SplitFeatureValue(featval, &feature)) {
-        cout << "Feature/value pairs must strings be of the form x=y: "
-             << featval
-             << endl;
+        std::cout << "Feature/value pairs must strings be of the form x=y: "
+                  << featval << std::endl;
         delete generated_symbols;
         return NULL;
       }
       int64 label = generated_symbols->Find(featval);
       if (label == fst::SymbolTable::kNoSymbol) {
-        cout << "Feature/value pair " << featval << " is not defined." << endl;
+        std::cout << "Feature/value pair " << featval << " is not defined."
+                  << std::endl;
         delete generated_symbols;
         return NULL;
       }
@@ -478,7 +485,7 @@ class FeatureVector : public Function<Arc> {
       if (ix == feature_label_pairs.end()) {
         feature_label_pairs[feature] = label;
       } else {
-        cout << "Duplicate value for feature: " << feature << endl;
+        std::cout << "Duplicate value for feature: " << feature << std::endl;
         delete generated_symbols;
         return NULL;
       }

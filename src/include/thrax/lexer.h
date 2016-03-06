@@ -64,6 +64,12 @@ class Lexer {
   // Access to the most recently read string.
   const string &YYString() const;
 
+  // Access to the beginning and one past end positions of the most recently
+  // read string. The difference between the two may not equal the length of
+  // YYString() for string literals with escape sequences.
+  int YYBeginPos() const;
+  int YYEndPos() const;
+
   // Current line number in the grammar being processed.  If the grammar has
   // been popped empty, which can happen in GetChar() if we run off the end of
   // the file while in the middle of processing, return -1.
@@ -95,10 +101,13 @@ class Lexer {
   struct Token {
     string token_string;
     TokenClass token_class;
+    int begin_pos, end_pos;
 
     void Reset() {
       token_string.clear();
       token_class = EOS;
+      begin_pos = -1;
+      end_pos = -1;
     }
   };
 
@@ -145,6 +154,15 @@ class Lexer {
         current_file->content[--current_file->pos] == '\n') {
       --current_file->line_number;
     }
+  }
+
+  // Zero based position of the next character in a file. Returns -1 when the
+  // grammar has been popped empty.
+  int GetPos() const {
+    if (grammar_.empty()) {
+      return -1;
+    }
+    return curr_file()->pos;
   }
 };
 
