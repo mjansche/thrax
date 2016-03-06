@@ -31,7 +31,7 @@ class RewriteTesterUtils {
 
  private:
   // Sorts the output by increasing cost (Tropical semiring)
-  static bool SortOutput(pair<string, float> i, pair<string, float> j);
+  static bool SortOutput(std::pair<string, float> i, std::pair<string, float> j);
 
   // Reader for the input in interactive version.
   bool ReadInput(string* s);

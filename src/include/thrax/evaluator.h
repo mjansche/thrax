@@ -249,7 +249,7 @@ class AstEvaluator : public AstWalker {
     // First of all look for the special FST that holds the generated labels
     // symbol table.  We must process that first so that we can know if any of
     // the labels on the incoming FSTs need to be reset.
-    if (far_reader->Find(kStringFstSymtabFst)) {
+    if (!far_reader->Done() && far_reader->Find(kStringFstSymtabFst)) {
       // First clear the remap, since any remappings that need to be done only
       // safely apply to the current FAR.
       function::StringFst<Arc>::ClearRemap();

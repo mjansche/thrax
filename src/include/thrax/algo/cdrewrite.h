@@ -39,6 +39,7 @@ using std::vector;
 #include <thrax/compat/compat.h>
 #include <fst/types.h>
 #include <fst/fstlib.h>
+#include <thrax/algo/optimize.h>
 
 namespace fst {
 
@@ -72,30 +73,6 @@ class EpsMapper {
 
   MapSymbolsAction OutputSymbolsAction() const { return MAP_COPY_SYMBOLS;}
 };
-
-// Optimize an fst over an idempotent semiring by encoding labels and
-// weight and applying determinization and minimization to the encoded
-// machine.
-template <class Arc>
-void Optimize(MutableFst<Arc> *fst) {
-  RmEpsilon(fst);
-  StateMap(fst, ArcSumMapper<Arc>(*fst));
-  if (!(Arc::Weight::Properties() & kIdempotent)) return;
-  if (fst->Properties(kAcceptor, false) != kAcceptor) {
-    EncodeMapper<Arc> encoder(kEncodeLabels | kEncodeWeights, ENCODE);
-    Encode(fst, &encoder);
-    VectorFst<Arc> ifst(*fst);
-    Determinize(ifst, fst);
-    Minimize(fst);
-    Decode(fst, encoder);
-  } else {
-    VectorFst<Arc> ifst(*fst);
-    Determinize(ifst, fst);
-    Minimize(fst);
-  }
-  StateMap(fst, ArcSumMapper<Arc>(*fst));
-}
-
 
 enum CDRewriteDirection { LEFT_TO_RIGHT, RIGHT_TO_LEFT, SIMULTANEOUS };
 enum CDRewriteMode { OBLIGATORY, OPTIONAL };
@@ -150,20 +127,20 @@ class CDRewriteRule {
 
   void MakeMarker(MutableFst<StdArc> *fst,
                   MarkerType type,
-                  const vector<pair<Label, Label> > &markers);
+                  const vector<std::pair<Label, Label> > &markers);
   void IgnoreMarkers(MutableFst<Arc> *fst,
-                     const vector<pair<Label, Label> > &markers);
+                     const vector<std::pair<Label, Label> > &markers);
   void AddMarkersToSigma(MutableFst<Arc> *sigma,
-                         const vector<pair<Label, Label> > &markers);
+                         const vector<std::pair<Label, Label> > &markers);
   void AppendMarkers(MutableFst<Arc> *fst,
-                     const vector<pair<Label, Label> > &markers);
+                     const vector<std::pair<Label, Label> > &markers);
   void PrependMarkers(MutableFst<Arc> *fst,
-                      const vector<pair<Label, Label> > &markers);
+                      const vector<std::pair<Label, Label> > &markers);
   void MakeFilter(const Fst<Arc> &beta,
                   const Fst<Arc> &sigma,
                   MutableFst<Arc> *filter,
                   MarkerType type,
-                  const vector<pair<Label, Label> > &markers,
+                  const vector<std::pair<Label, Label> > &markers,
                   bool reverse);
   void MakeReplace(MutableFst<Arc> *fst, const Fst<Arc> &sigma);
   static Label MaxLabel(const Fst<Arc> &fst);
@@ -196,7 +173,7 @@ template <class Arc>
 void CDRewriteRule<Arc>::MakeMarker(
     MutableFst<StdArc> *fst,
     MarkerType type,
-    const vector<pair<Label, Label> > &markers) {
+    const vector<std::pair<Label, Label> > &markers) {
   typedef typename StdArc::StateId StateId;
   typedef typename StdArc::Weight Weight;
 
@@ -259,7 +236,7 @@ void CDRewriteRule<Arc>::MakeMarker(
 // This corresponds to the subscripting in Mohri and Sproat (1996).
 template <class Arc>
 void CDRewriteRule<Arc>::IgnoreMarkers(MutableFst<Arc> *fst,
-    const vector<pair<Label, Label> > &markers) {
+    const vector<std::pair<Label, Label> > &markers) {
   for (typename Arc::StateId i = 0; i < fst->NumStates(); ++i) {
     for (ssize_t k = 0; k < markers.size(); ++k)
       fst->AddArc(i, Arc(markers[k].first, markers[k].second,
@@ -271,7 +248,7 @@ void CDRewriteRule<Arc>::IgnoreMarkers(MutableFst<Arc> *fst,
 // Turn Sigma^* into (Sigma union markers)^*
 template <class Arc>
 void CDRewriteRule<Arc>::AddMarkersToSigma(MutableFst<Arc> *sigma,
-    const vector<pair<Label, Label> > &markers) {
+    const vector<std::pair<Label, Label> > &markers) {
   for (typename Arc::StateId s = 0; s < sigma->NumStates(); ++s) {
     if (sigma->Final(s) != Arc::Weight::Zero()) {
       for (size_t k = 0; k < markers.size(); ++k)
@@ -295,7 +272,7 @@ inline void PrependSigmaStar(MutableFst<Arc> *fst,
 // by markers.
 template <class Arc>
 void CDRewriteRule<Arc>::AppendMarkers(MutableFst<Arc> *fst,
-    const vector<pair<Label, Label> > &markers) {
+    const vector<std::pair<Label, Label> > &markers) {
   VectorFst<Arc> temp_fst;
   typename Arc::StateId start = temp_fst.AddState();
   typename Arc::StateId final = temp_fst.AddState();
@@ -312,7 +289,7 @@ void CDRewriteRule<Arc>::AppendMarkers(MutableFst<Arc> *fst,
 // by markers.
 template <class Arc>
 void CDRewriteRule<Arc>::PrependMarkers(MutableFst<Arc> *fst,
-    const vector<pair<Label, Label> > &markers) {
+    const vector<std::pair<Label, Label> > &markers) {
   if (fst->Start() == kNoStateId) fst->SetStart(fst->AddState());
   typename Arc::StateId new_start = fst->AddState(), old_start = fst->Start();
   fst->SetStart(new_start);
@@ -335,7 +312,7 @@ void CDRewriteRule<Arc>::PrependMarkers(MutableFst<Arc> *fst,
 template <class Arc>
 void CDRewriteRule<Arc>::MakeFilter(const Fst<Arc> &beta,
     const Fst<Arc> &sigma, MutableFst<Arc> *filter, MarkerType type,
-    const vector<pair<Label, Label> > &markers, bool reverse) {
+    const vector<std::pair<Label, Label> > &markers, bool reverse) {
   VectorFst<StdArc> ufilter;
   Map(beta, &ufilter, RmWeightMapper<Arc, StdArc>());
   VectorFst<StdArc> usigma;
@@ -382,12 +359,12 @@ void CDRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
     fst->SetStart(fst->AddState());
   // Label pairs for to be added arcs to the initial state or from the
   // final states.
-  pair<Label, Label> initial_pair;
-  pair<Label, Label> final_pair;
+  std::pair<Label, Label> initial_pair;
+  std::pair<Label, Label> final_pair;
   // Label for self-loops to be added at the new initial state (to be
   // created) and at every other state.
-  vector<pair<Label, Label> > initial_loops;
-  vector<pair<Label, Label> > all_loops;
+  vector<std::pair<Label, Label> > initial_loops;
+  vector<std::pair<Label, Label> > all_loops;
   switch (mode_) {
     case OBLIGATORY:
       all_loops.push_back(std::make_pair(lbrace1_, 0));
@@ -514,7 +491,7 @@ void CDRewriteRule<Arc>::Compile(
   rbrace_ = MaxLabel(sigma) + 1;
   lbrace1_ = rbrace_ + 1;
   lbrace2_ = rbrace_ + 2;
-  vector<pair<Label, Label> > markers;
+  vector<std::pair<Label, Label> > markers;
   VectorFst<Arc> sigma_rbrace(sigma);
   markers.push_back(std::make_pair(rbrace_, rbrace_));
   AddMarkersToSigma(&sigma_rbrace, markers);

@@ -249,7 +249,7 @@ class Feature : public Function<Arc> {
   // feature.
   static bool ValidateFeatureSequenceFst(
       MutableTransducer* fst,
-      vector<pair<typename Arc::StateId, string> >* features) {
+      vector<std::pair<typename Arc::StateId, string> >* features) {
     if (!fst->Properties(fst::kAcceptor | fst::kAcyclic, true)) {
       std::cout
           << "Feature/value sequence automaton must be an acyclic acceptor"
@@ -308,7 +308,7 @@ class Feature : public Function<Arc> {
         }
         aiter.Next();
       }
-      features->push_back(pair<typename Arc::StateId, string>(s, feature));
+      features->push_back(std::pair<typename Arc::StateId, string>(s, feature));
       s = nextstate;
     }
     delete generated_symbols;
@@ -332,7 +332,7 @@ class Feature : public Function<Arc> {
                 << std::endl;
       return false;
     }
-    vector<pair<typename Arc::StateId, string> > features;
+    vector<std::pair<typename Arc::StateId, string> > features;
     if (ValidateFeatureSequenceFst(fst, &features)) {
       *feature = features[0].second;
       return true;
@@ -371,7 +371,7 @@ class Category : public Function<Arc> {
  protected:
   virtual DataType* Execute(const vector<DataType*>& args) {
     CHECK_GE(args.size(), 1);
-    vector<pair<string, Transducer*> > features;
+    vector<std::pair<string, Transducer*> > features;
     for (int i = 0; i < args.size(); ++i) {
       if (!args[i]->is<Transducer*>()) {
         std::cout << "Category: All arguments must be Feature fsts (arg "
@@ -382,7 +382,7 @@ class Category : public Function<Arc> {
           new MutableTransducer(**args[i]->get<Transducer*>());
       string feature_name;
       CHECK(Feature<Arc>::ValidateFeatureFst(feature_fst, &feature_name));
-      features.push_back(pair<string, Transducer*>(feature_name, feature_fst));
+      features.push_back(std::pair<string, Transducer*>(feature_name, feature_fst));
     }
     // Features in a category are kept sorted by the byte sort order of the
     // feature name.
@@ -408,7 +408,7 @@ class Category : public Function<Arc> {
  public:
   // See comments for ValidateFeatureSequenceFst under Feature
   static bool ValidateFeatureSequenceFst(MutableTransducer* fst,
-                                         vector<pair<typename Arc::StateId,
+                                         vector<std::pair<typename Arc::StateId,
                                          string> >* features) {
     return Feature<Arc>::ValidateFeatureSequenceFst(fst, features);
   }
@@ -441,7 +441,7 @@ class FeatureVector : public Function<Arc> {
     }
     MutableTransducer* category_fst =
         static_cast<MutableTransducer*>(*args[0]->get<Transducer*>());
-    vector<pair<typename Arc::StateId, string> > features;
+    vector<std::pair<typename Arc::StateId, string> > features;
     if (!Category<Arc>::ValidateFeatureSequenceFst(category_fst,
                                                    &features)) {
       std::cout << "FeatureVector: First argument must be a Category fst"

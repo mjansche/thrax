@@ -51,7 +51,7 @@ bool VisitState(const Transducer& fst,
                 StdArc::StateId state,
                 const string& path,
                 float cost,
-                vector<pair<string, float> >* paths);
+                vector<std::pair<string, float> >* paths);
 
 // Computes the n-shortest paths and returns a vector of strings, each string
 // corresponding to each path. The mapping of labels to strings is controlled by
@@ -60,7 +60,7 @@ bool VisitState(const Transducer& fst,
 // label.
 
 bool FstToStrings(const Transducer& fst,
-                  vector<pair<string, float> >* strings,
+                  vector<std::pair<string, float> >* strings,
                   const SymbolTable* generated_symtab,
                   TokenType type = BYTE,
                   SymbolTable* symtab = NULL,

@@ -38,7 +38,7 @@ bool VisitState(const Transducer& fst,
                 StdArc::StateId state,
                 const string& path,
                 float cost,
-                vector<pair<string, float> >* paths) {
+                vector<std::pair<string, float> >* paths) {
   if (fst.Final(state) != StdArc::Weight::Zero()) {
     paths->push_back(std::make_pair(path, cost + fst.Final(state).Value()));
   }
@@ -86,7 +86,7 @@ bool VisitState(const Transducer& fst,
 }
 
 bool FstToStrings(const Transducer& fst,
-                  vector<pair<string, float> >* strings,
+                  vector<std::pair<string, float> >* strings,
                   const SymbolTable* generated_symtab,
                   TokenType type,
                   SymbolTable* symtab,

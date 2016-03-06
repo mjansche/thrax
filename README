@@ -10,7 +10,7 @@ REQUIREMENTS:
   c99 (snprintf, strtoll, <stdint.h>), and C++11 with GNU extensions are
   available. 
 
-  It is assumed you have OpenFst (www.openfst.org) 1.5.0 or higher and have
+  It is assumed you have OpenFst (www.openfst.org) 1.5.1 or higher and have
   installed it. 
 
   MAKE SURE YOU CONFIGURE OpenFst WITH THE --enable-far, --enable-pdt AND

@@ -96,8 +96,8 @@ int main(int argc, char** argv) {
   // cleaning this up.
   fst::StdVectorFst cleaned(*fst);
   fst::RmEpsilon(&cleaned);
-  vector<pair<string, float> > istrings;
-  vector<pair<string, float> > ostrings;
+  vector<std::pair<string, float> > istrings;
+  vector<std::pair<string, float> > ostrings;
   fst::UniformArcSelector<StdArc> uniform_selector;
   fst::RandGenOptions< fst::UniformArcSelector<StdArc> >
       opts(uniform_selector, INT_MAX, 1, true, false);

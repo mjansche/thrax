@@ -75,7 +75,7 @@ bool RewriteTesterUtils::ReadInput(string* s) {
 #else   // HAVE_READLINE
 bool RewriteTesterUtils::ReadInput(string* s) {
   std::cout << "Input string: ";
-  return static_cast<bool>(getline(cin, *s));
+  return static_cast<bool>(getline(std::cin, *s));
 }
 #endif  // HAVE_READLINE
 
@@ -94,8 +94,8 @@ RewriteTesterUtils::~RewriteTesterUtils() {
   delete utf8_symtab_;
 }
 
-bool RewriteTesterUtils::SortOutput(pair<string, float> i,
-                                    pair<string, float> j) {
+bool RewriteTesterUtils::SortOutput(std::pair<string, float> i,
+                                    std::pair<string, float> j) {
   return(i.second < j.second);
 }
 
@@ -205,7 +205,7 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
     if (grm_.Rewrite(rule_bits[0], input_fst, &output_fst,
                      pdt_parens_rule, mpdt_assignments_rule)) {
       if (FLAGS_show_details && rules_.size() > 1) {
-        vector<pair<string, float>> tmp;
+        vector<std::pair<string, float>> tmp;
         FstToStrings(output_fst, &tmp, generated_symtab_, type_,
                      output_symtab_, FLAGS_noutput);
         for (const auto& one_result : tmp) {
@@ -224,14 +224,14 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
     }
   }
 
-  vector<pair<string, float> > strings;
+  vector<std::pair<string, float> > strings;
   set<string> seen;
   if (succeeded && FstToStrings(output_fst, &strings,
                                 generated_symtab_, type_,
                                 output_symtab_, FLAGS_noutput)) {
     if (strings.size() > 1)
       std::sort(strings.begin(), strings.end(), SortOutput);
-    vector<pair<string, float> >::iterator itr = strings.begin();
+    vector<std::pair<string, float> >::iterator itr = strings.begin();
     for (; itr != strings.end(); ++itr) {
       set<string>::iterator sx = seen.find(itr->first);
       if (sx != seen.end()) continue;

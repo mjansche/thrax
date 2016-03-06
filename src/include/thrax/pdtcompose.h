@@ -99,7 +99,7 @@ class PdtCompose : public Function<Arc> {
     }
 
     MutableTransducer parens_transducer(**args[2]->get<Transducer*>());
-    vector<pair<Label, Label> > parens;
+    vector<std::pair<Label, Label> > parens;
     MakeParensPairVector(parens_transducer, &parens);
 
     bool left_pdt = false;

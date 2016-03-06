@@ -43,6 +43,8 @@ class Replace : public Function<Arc> {
  public:
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
+  typedef fst::ReplaceFst<Arc> ReplaceTransducer;
+  typedef fst::ReplaceFstOptions<Arc> ReplaceOptions;
   typedef typename Arc::Label Label;
 
   Replace() {}
@@ -54,7 +56,7 @@ class Replace : public Function<Arc> {
     if (args.size() < 3) {
       std::cout << "Replace: Expected at least 3 arguments but got "
                 << args.size() << std::endl;
-      return NULL;
+      return nullptr;
     }
 
     // First transducer should be a single path transducer where each
@@ -67,7 +69,7 @@ class Replace : public Function<Arc> {
       if (!args[i]->is<Transducer*>()) {
         std::cout << "Replace: all arguments must be FSTs: argument " << i
                   << " is not." << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
 
@@ -76,25 +78,37 @@ class Replace : public Function<Arc> {
     ExtractReplacementLabels(&label_transducer, &labels);
     if (labels.empty()) {
       std::cout << "Replace: No labels provided" << std::endl;
-      return NULL;
+      return nullptr;
     }
     if (args.size() - 1 != labels.size()) {
       std::cout << "Replace: Number of replacement FSTs " << args.size() - 1
                 << " does not match the number of replacement labels "
                 << labels.size() << std::endl;
-      return NULL;
+      return nullptr;
     }
 
     Label root = labels[0];
 
-    vector<pair<Label, const Transducer*> > ifst_array;
+    vector<std::pair<Label, const Transducer*> > ifst_array;
 
     for (int i = 1; i < args.size(); ++i) {
       const Transducer* fst = *args[i]->get<Transducer*>();
       ifst_array.push_back(std::make_pair(labels[i - 1], fst));
     }
+
+    // Explicitly constructs ReplaceFst so we can check for cyclic dependencies
+    // before attempting expansion.
+    fst::ReplaceFstOptions<Arc> opts(root, fst::REPLACE_LABEL_NEITHER,
+                                         fst::REPLACE_LABEL_NEITHER, 0);
+    opts.gc = true;     // These options to the underlying cache supposedly
+    opts.gc_limit = 0;  // result in faster batch expansion.
+    ReplaceTransducer replace(ifst_array, opts);
+    if (replace.CyclicDependencies()) {
+      std::cout << "Replace: Cyclic dependencies detected; cannot expand";
+      return nullptr;
+    }
     MutableTransducer* output = new MutableTransducer();
-    fst::Replace(ifst_array, output, root, true);
+    *output = replace;  // Expansion.
     return new DataType(output);
   }
 

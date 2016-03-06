@@ -226,7 +226,10 @@ bool GrmCompilerSpec<Arc>::ParseFile(const string &filename) {
   file_ = filename;
   string contents;
   ReadFileToStringOrDie(local_grammar, &contents);
-
+  // Adds a newline in case one was left off. It doesn't hurt to have an extra
+  // one (so not worth checking to see if one is already there), but the bison
+  // parser fails for cryptic reasons if one is missing.
+  contents += "\n";
   return ParseContents(contents);
 }
 

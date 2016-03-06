@@ -283,15 +283,17 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 algo_include_headers = thrax/algo/cdrewrite.h \
-		       thrax/algo/prefix_tree.h thrax/algo/resource-map.h
+		       thrax/algo/prefix_tree.h thrax/algo/resource-map.h \
+		       thrax/algo/optimize.h
 
 compat_include_headers = thrax/compat/compat.h \
 			 thrax/compat/closure.h thrax/compat/oneof.h \
 			 thrax/compat/registry.h thrax/compat/stlfunctions.h \
 			 thrax/compat/utils.h
 
-grm_include_headers = thrax/arcsort.h thrax/assert-equal.h thrax/cdrewrite.h \
-		      thrax/closure.h \
+grm_include_headers = thrax/arcsort.h thrax/assert-equal.h \
+		      thrax/assert-empty.h thrax/assert-null.h thrax/cdrewrite.h \
+		      thrax/closure.h thrax/compiler.h \
 		      thrax/collection-node.h thrax/compose.h thrax/concat.h \
 		      thrax/connect.h thrax/datatype.h thrax/determinize.h \
 		      thrax/difference.h thrax/evaluator.h thrax/expand.h \

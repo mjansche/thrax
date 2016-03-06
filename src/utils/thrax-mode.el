@@ -46,12 +46,12 @@
 
 (defvar thrax-built-in-functions
   (regexp-opt
-   '("Analyzer" "ArcSort" "AssertEqual" "Category" "CDRewrite" "Closure" "Compose"
-     "Concat" "Connect"
+   '("Analyzer" "ArcSort" "AssertEmpty" "AssertEqual" "AssertNull"
+     "Category" "CDRewrite" "Closure" "Compose" "Concat" "Connect"
      "Determinize" "Difference" "Expand" "Feature" "FeatureVector" "Invert" "LoadFst"
      "LoadFstFromFar" "Minimize" "MPdtCompose" "Optimize" "ParadigmReplace" "PdtCompose"
-     "Project" "Replace" "Reverse" "Rewrite" "RmEpsilon" "StringFile" "StringFst"
-     "SymbolTable" "Tagger" "Union")
+     "Project" "Replace" "Reverse" "Rewrite" "RmEpsilon" "RmWeight" "StringFile"
+     "StringFst" "SymbolTable" "Tagger" "Union")
    'words))
 
 (defvar thrax-syntax "[\]\[=@:|*+\?\"(),;{}-]")
@@ -66,7 +66,7 @@
 ; equals sign is a user-defined fst
 (defvar thrax-defined-fst "\\([^ \n]+\\)[ \n]*=")
 
-(setq thrax-font-lock-keywords
+(defconst thrax-font-lock-keywords
   `((,thrax-defined-fst . 1)  ;; Assign  \1 match to font-lock-keyword-face
     (,thrax-weight . 'magenta)
     (,thrax-single-quoted-string . 'magenta)
@@ -84,6 +84,7 @@
   (let ((deactivate-mark nil) (comment-start "#") (comment-end ""))
     (comment-dwim arg)))
 
+;;;###autoload
 (define-derived-mode thrax-mode fundamental-mode
   "Thrax mode"
   "Major mode for editing OpenGrm Thrax grammars"
@@ -101,17 +102,23 @@
   (set (make-local-variable 'font-lock-comment-face) 'blue)
   (set (make-local-variable 'font-lock-keyword-face) 'cyan)
   (set (make-local-variable 'font-lock-string-face) 'red)  ;; double-quoted strings
-)
+  (auto-fill-mode 1)
+  ;; make whitespace-cleanup use spaces only
+  (setq indent-tabs-mode nil))
 
-
-(setq thrax-mode-hook '(lambda () (auto-fill-mode 1)))
 
 (add-hook 'thrax-mode-hook
   (lambda()
     (add-hook 'before-save-hook
       (lambda()
         (save-excursion
-          (whitespace-cleanup))))))
+        (whitespace-cleanup)))
+      nil
+      t)))
 
+;;;###autoload
 (setq auto-mode-alist
-      (append '(("\\.grm$" . thrax-mode)) auto-mode-alist))
+      (append '(("\\.grm\\'" . thrax-mode)) auto-mode-alist))
+
+(provide 'thrax-mode)
+;;; thrax-mode.el ends here

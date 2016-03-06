@@ -399,7 +399,7 @@ class StringFst : public Function<Arc> {
       } else {
         // Find the right label - either the one previously generated for the
         // symbol, or a new one that we'll cache now.
-        pair<Map::iterator, bool> ret =
+        std::pair<Map::iterator, bool> ret =
             symbol_label_map_.insert(Map::value_type(*symbol, next_label_));
         if (ret.second) {
           label = next_label_++;

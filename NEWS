@@ -47,3 +47,10 @@ Thrax - Release 1.2
   multiple rules  are specified, the tool will show the output of each
   individual rule. Useful when trying to find which rule caused a problem.
 * Raises a warning if more than one definition is given for a function.
+
+Thrax - Release 1.2.1
+* AssertNull and AssertEmpty assertions added.
+* Minor fixes to use fully qualified names for std:: objects.
+* Rearrangement of the main compiler to have separate C++ files for each arc type.
+* Fixes potential bug in Replace implementation.
+* Algorithmic improvements to Optimize.

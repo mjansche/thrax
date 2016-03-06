@@ -291,7 +291,7 @@ bool AbstractGrmManager<Arc>::Rewrite(
 
   if (pdt_parens_fst) {
     MutableTransducer mut_pdt_parens_fst(*pdt_parens_fst);
-    vector<pair<Label, Label> > pdt_parens;
+    vector<std::pair<Label, Label> > pdt_parens;
     MakeParensPairVector(mut_pdt_parens_fst, &pdt_parens);
 
     // EXPAND_FILTER removes the parentheses, allowing for subsequent

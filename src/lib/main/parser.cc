@@ -126,7 +126,7 @@ namespace thrax_rewriter {
    in a cleaner way. */
 
 void yyerror(void *parm, const char *s) {
-   cout << "Parse Failed: " << s << endl;
+   std::cout << "Parse Failed: " << s << std::endl;
 }
 
 #line 133 "main/parser.cc" /* yacc.c:339  */
@@ -2310,7 +2310,7 @@ int yylex(void *, void *parm) {
 }
 
 int yyerror(const char *s) {
-  cout << "Parse Failed: " << s << endl;
+  std::cout << "Parse Failed: " << s << std::endl;
   return 0;
 }
 

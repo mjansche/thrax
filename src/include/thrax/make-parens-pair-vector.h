@@ -34,7 +34,7 @@ namespace thrax {
 template <typename Arc>
 inline void MakeParensPairVector(
     const fst::VectorFst<Arc>& parens_transducer,
-    vector<pair<typename Arc::Label, typename Arc::Label> > *parens) {
+    vector<std::pair<typename Arc::Label, typename Arc::Label> > *parens) {
   set<typename Arc::Label> seen_labels;
   typename set<typename Arc::Label>::iterator iter;
   for (typename Arc::StateId s = 0; s < parens_transducer.NumStates(); ++s) {
@@ -66,7 +66,7 @@ inline void MakeParensPairVector(
                      << " is identical to right parenthesis "
                      << arc.olabel;
         }
-        parens->push_back(pair<typename Arc::Label, typename Arc::Label>(
+        parens->push_back(std::pair<typename Arc::Label, typename Arc::Label>(
             arc.ilabel, arc.olabel));
       }
       aiter.Next();
@@ -78,7 +78,7 @@ inline void MakeParensPairVector(
 template <typename Arc>
 inline void MakeAssignmentsVector(
     const fst::VectorFst<Arc>& assignments_transducer,
-    const vector<pair<typename Arc::Label, typename Arc::Label> >& parens,
+    const vector<std::pair<typename Arc::Label, typename Arc::Label> >& parens,
     vector<typename Arc::Label>* assignments) {
   map<typename Arc::Label, typename Arc::Label> assignment_map;
   typename map<typename Arc::Label, typename Arc::Label>::iterator iter;

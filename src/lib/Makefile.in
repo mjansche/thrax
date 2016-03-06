@@ -129,7 +129,8 @@ am_libthrax_la_OBJECTS = ast/collection-node.lo ast/grammar-node.lo \
 	ast/import-node.lo ast/node.lo ast/return-node.lo \
 	ast/rule-node.lo ast/statement-node.lo ast/string-node.lo \
 	flags/flags.lo main/grm-compiler.lo main/lexer.lo \
-	main/parser.lo main/grm-manager.lo util/utils.lo \
+	main/parser.lo main/grm-manager.lo main/compiler-stdarc.lo \
+	main/compiler-log.lo main/compiler-log64.lo util/utils.lo \
 	walker/evaluator-specializations.lo \
 	walker/identifier-counter.lo walker/loader.lo \
 	walker/namespace.lo walker/printer.lo walker/stringfst.lo \
@@ -361,6 +362,7 @@ libthrax_la_SOURCES = ast/collection-node.cc ast/grammar-node.cc ast/fst-node.cc
                       ast/string-node.cc \
                       flags/flags.cc \
                       main/grm-compiler.cc main/lexer.cc main/parser.yy main/grm-manager.cc \
+		      main/compiler-stdarc.cc main/compiler-log.cc main/compiler-log64.cc \
                       util/utils.cc \
                       walker/evaluator-specializations.cc walker/identifier-counter.cc \
 		      walker/loader.cc walker/namespace.cc walker/printer.cc \
@@ -476,6 +478,12 @@ main/lexer.lo: main/$(am__dirstamp) main/$(DEPDIR)/$(am__dirstamp)
 main/parser.lo: main/$(am__dirstamp) main/$(DEPDIR)/$(am__dirstamp)
 main/grm-manager.lo: main/$(am__dirstamp) \
 	main/$(DEPDIR)/$(am__dirstamp)
+main/compiler-stdarc.lo: main/$(am__dirstamp) \
+	main/$(DEPDIR)/$(am__dirstamp)
+main/compiler-log.lo: main/$(am__dirstamp) \
+	main/$(DEPDIR)/$(am__dirstamp)
+main/compiler-log64.lo: main/$(am__dirstamp) \
+	main/$(DEPDIR)/$(am__dirstamp)
 util/$(am__dirstamp):
 	@$(MKDIR_P) util
 	@: > util/$(am__dirstamp)
@@ -537,6 +545,9 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@ast/$(DEPDIR)/statement-node.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@ast/$(DEPDIR)/string-node.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@flags/$(DEPDIR)/flags.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/compiler-log.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/compiler-log64.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/compiler-stdarc.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/grm-compiler.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/grm-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/lexer.Plo@am__quote@
