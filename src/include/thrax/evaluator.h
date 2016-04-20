@@ -254,7 +254,7 @@ class AstEvaluator : public AstWalker {
       // safely apply to the current FAR.
       function::StringFst<Arc>::ClearRemap();
       if (!function::StringFst<Arc>::MergeLabelSymbolTable(
-              *far_reader->GetFst().InputSymbols())) {
+              *far_reader->GetFst()->InputSymbols())) {
         Error(*node, "Failed to merge symbol tables");
         // We can gracefully exit this loop when success_ becomes false and do
         // the necessary cleanup afterwards.
@@ -274,7 +274,7 @@ class AstEvaluator : public AstWalker {
         IdentifierNode key_inode(key);
         if (!env_->Get<DataType>(key_inode)) {  // Add only if new.
           // Must be mutable for now in case we need to change the symbol table.
-          MutableTransducer tmpfst(far_reader->GetFst());
+          MutableTransducer tmpfst(*(far_reader->GetFst()));
           RemapGeneratedLabels(&tmpfst);
           ReassignSymbols(&tmpfst);
           Transducer* fst = tmpfst.Copy();

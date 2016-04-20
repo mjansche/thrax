@@ -83,7 +83,7 @@ class LoadFstFromFar : public Function<Arc> {
       delete reader;
       return NULL;
     }
-    MutableTransducer* fst = new MutableTransducer(reader->GetFst());
+    MutableTransducer* fst = new MutableTransducer(*(reader->GetFst()));
     delete reader;
     if (FLAGS_save_symbols) {
       if (!fst->InputSymbols()) {

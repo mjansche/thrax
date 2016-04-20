@@ -98,6 +98,12 @@ class AbstractGrmManager {
   // should not free the pointer.
   const Transducer* GetFst(const string& name) const;
 
+  // Gets the named FST, just like GetFst(), but this function doesn't
+  // lock anything and is thread-safe because it returns a transducer
+  // safely shallow-copied from the original. The caller assumes the
+  // ownership of the returned transducer.
+  Transducer* GetFstSafe(const string& name) const;
+
   // Modify the transducer under the given name.
   // If no such rule name exists, returns false, otherwise returns true.
   // Note: For thread-safety, it is assumed this function will not be
@@ -118,12 +124,6 @@ class AbstractGrmManager {
   // success and false otherwise.
   template <typename FarReader>
   bool LoadArchive(FarReader *reader);
-
-  // Gets the named FST, just like GetFst(), but this function doesn't
-  // lock anything and is thread-safe because it returns transducer
-  // safely shallow-copied from the original. The called assumes the
-  // ownership of the returned transducer.
-  const Transducer* GetFstSafe(const string& name) const;
 
   // The list of FSTs held by this manager.
   map<string, const Transducer*> fsts_;
@@ -148,7 +148,7 @@ bool AbstractGrmManager<Arc>::LoadArchive(FarReader *reader) {
   fsts_.clear();
   for (reader->Reset(); !reader->Done(); reader->Next()) {
     const string& name = reader->GetKey();
-    const Transducer* fst = new MutableTransducer(reader->GetFst());
+    const Transducer* fst = new MutableTransducer(*(reader->GetFst()));
     fsts_[name] = fst;
   }
   SortRuleInputLabels();
@@ -182,7 +182,7 @@ AbstractGrmManager<Arc>::GetFst(const string& name) const {
 }
 
 template <typename Arc>
-const typename AbstractGrmManager<Arc>::Transducer*
+typename AbstractGrmManager<Arc>::Transducer*
 AbstractGrmManager<Arc>::GetFstSafe(const string& name) const {
   const Transducer *fst = GetFst(name);
   if (fst) {

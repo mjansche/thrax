@@ -67,12 +67,9 @@ class DataType {
   }
 
  private:
-  typedef Oneof<fst::Fst<fst::StdArc>*,
-                           fst::Fst<fst::LogArc>*,
-                           fst::Fst<fst::Log64Arc>*,
-                           fst::SymbolTable,
-                           string,
-                           int>
+  typedef Oneof<
+      fst::Fst<fst::StdArc>*, fst::Fst<fst::LogArc>*,
+      fst::Fst<fst::Log64Arc>*, fst::SymbolTable, string, int>
       ThingType;
   ThingType thing_;
 

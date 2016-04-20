@@ -54,3 +54,7 @@ Thrax - Release 1.2.1
 * Rearrangement of the main compiler to have separate C++ files for each arc type.
 * Fixes potential bug in Replace implementation.
 * Algorithmic improvements to Optimize.
+
+Thrax - Release 1.2.2
+
+* Compatibility release for OpenFst 1.5.2.
