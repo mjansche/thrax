@@ -220,12 +220,11 @@ void GrmCompilerSpec<Arc>::Error(const string& message) {
 
 template <typename Arc>
 bool GrmCompilerSpec<Arc>::ParseFile(const string &filename) {
-  string local_grammar = JoinPath(FLAGS_indir, filename);
-  VLOG(1) << "Parsing file: " << local_grammar;
+  VLOG(1) << "Parsing file: " << filename;
 
   file_ = filename;
   string contents;
-  ReadFileToStringOrDie(local_grammar, &contents);
+  ReadFileToStringOrDie(filename, &contents);
   // Adds a newline in case one was left off. It doesn't hurt to have an extra
   // one (so not worth checking to see if one is already there), but the bison
   // parser fails for cryptic reasons if one is missing.
