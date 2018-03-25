@@ -1,5 +1,5 @@
 EXTRA_DIST = thraxgrm.vim thrax-mode.el
-pkgdatadir=$(datarootdir)/thrax/utils
+pkgdatadir=$(DESTDIR)$(datarootdir)/thrax/utils
 
 install-data-local: $(EXTRA_DIST)
 	-mkdir -p -m 755 $(pkgdatadir)

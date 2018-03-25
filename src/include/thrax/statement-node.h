@@ -36,7 +36,7 @@ class StatementNode : public Node {
     RETURN_STATEMENTNODE,
   };
 
-  StatementNode(StatementNodeType type);
+  explicit StatementNode(StatementNodeType type);
   virtual ~StatementNode();
 
   StatementNodeType GetType() const;

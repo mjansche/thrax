@@ -100,7 +100,7 @@ class Rewrite : public BinaryFstFunction<Arc> {
  protected:
   virtual Transducer* BinaryFstExecute(const Transducer& left,
                                        const Transducer& right,
-                                       const vector<DataType*>& args) {
+                                       const std::vector<DataType*>& args) {
     if (args.size() != 2) {
       std::cout << "Rewrite: Expected 2 arguments but got " << args.size()
                 << std::endl;

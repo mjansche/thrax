@@ -72,7 +72,7 @@ class PdtCompose : public Function<Arc> {
   virtual ~PdtCompose() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() < 3 || args.size() > 5) {
       std::cout << "PdtCompose: Expected 3-5 arguments but got " << args.size()
                 << std::endl;
@@ -99,7 +99,7 @@ class PdtCompose : public Function<Arc> {
     }
 
     MutableTransducer parens_transducer(**args[2]->get<Transducer*>());
-    vector<std::pair<Label, Label> > parens;
+    std::vector<std::pair<Label, Label> > parens;
     MakeParensPairVector(parens_transducer, &parens);
 
     bool left_pdt = false;

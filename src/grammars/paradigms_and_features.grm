@@ -10,7 +10,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2005-2013 Google, Inc.
+# Copyright 2005-2016 Google, Inc.
 # Author: rws@google.com (Richard Sproat)
 
 # Simple toy grammar of Latin nominal case inflection, using the support for

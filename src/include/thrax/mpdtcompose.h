@@ -80,7 +80,7 @@ class MPdtCompose : public Function<Arc> {
   virtual ~MPdtCompose() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() < 4 || args.size() > 6) {
       std::cout << "MPdtCompose: Expected 4-6 arguments but got " << args.size()
                 << std::endl;
@@ -108,11 +108,11 @@ class MPdtCompose : public Function<Arc> {
     }
 
     MutableTransducer parens_transducer(**args[2]->get<Transducer*>());
-    vector<std::pair<Label, Label> > parens;
+    std::vector<std::pair<Label, Label> > parens;
     MakeParensPairVector(parens_transducer, &parens);
 
     MutableTransducer assignments_transducer(**args[3]->get<Transducer*>());
-    vector<Label> assignments;
+    std::vector<Label> assignments;
     MakeAssignmentsVector(assignments_transducer, parens, &assignments);
     // NB: In the underlying nlp/fst/extensions/mpdt library we actually just
     // use left_pdt/right_pdt, but to keep things a little more clear for the

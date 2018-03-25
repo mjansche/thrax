@@ -47,7 +47,7 @@ class LoadFstFromFar : public Function<Arc> {
   virtual ~LoadFstFromFar() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() != 2) {
       std::cout << "LoadFstFromFar: Expected 2 arguments but got "
                 << args.size() << std::endl;

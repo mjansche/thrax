@@ -45,7 +45,7 @@ class AssertEmpty : public UnaryFstFunction<Arc> {
 
  protected:
   Transducer* UnaryFstExecute (const Transducer& left,
-                               const vector<DataType*>& args) override {
+                               const std::vector<DataType*>& args) override {
     if (args.size() != 1) {
       std::cout << "AssertEmpty: Expected 1 argument but got "
                 << args.size() << std::endl;

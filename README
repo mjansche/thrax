@@ -1,4 +1,4 @@
-Thrax - Release 1.2.2
+Thrax - Release 1.2.3
 
 Thrax is a toolkit for compiling grammars based on regular expressions and
 context-dependent rewrite rules into weighted finite-state transducers
@@ -10,11 +10,12 @@ REQUIREMENTS:
   c99 (snprintf, strtoll, <stdint.h>), and C++11 with GNU extensions are
   available.
 
-  It is assumed you have OpenFst (www.openfst.org) 1.5.2 or higher and have
+  It is assumed you have OpenFst (www.openfst.org) 1.6.0 or higher and have
   installed it.
 
   MAKE SURE YOU CONFIGURE OpenFst WITH THE --enable-far, --enable-pdt AND
-  --enable-mpdt FLAGS.
+  --enable-mpdt FLAGS. Starting with OpenFst 1.6.0, you can also just  use
+  --enable-grm. 
 
 INSTALLATION:
   Follow the generic GNU build system instructions in ./INSTALL.  We

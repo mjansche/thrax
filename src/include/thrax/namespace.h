@@ -159,7 +159,7 @@ class Namespace {
   // Provides a mapping from a single-component alias to the next Namespace
   // object.  This map is expected to be reasonably small, so we'll use a normal
   // map instead of a hash_map.
-  map<string, Namespace*> alias_namespace_map_;
+  std::map<string, Namespace*> alias_namespace_map_;
 
   // The actual map of string to global resources.  This resource map will
   // likely be shared across this namespace and all sub-namespaces.  Keys are
@@ -171,7 +171,7 @@ class Namespace {
   // This will be for function calls primarily and other non-globally-exported
   // stuff.  The front of the list is the bottom of the stack; the back will be
   // the newest scope.
-  vector<ResourceMap*> local_env_;
+  std::vector<ResourceMap*> local_env_;
 
   DISALLOW_COPY_AND_ASSIGN(Namespace);
 };

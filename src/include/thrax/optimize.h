@@ -54,15 +54,23 @@ class Optimize : public UnaryFstFunction<Arc> {
   // This function is public since other functions sometimes like to call on
   // this without having to go through the whole Function registration
   // rigmarole.
-  static Transducer* ActuallyOptimize(const Transducer& fst) {
+  static Transducer* ActuallyOptimize(const Transducer& fst,
+                                      bool compute_props = false) {
     MutableTransducer* output = new MutableTransducer(fst);
-    fst::Optimize(output);
+    fst::Optimize(output, compute_props);
+    return output;
+  }
+
+  static Transducer* ActuallyOptimizeDifferenceRhs(const Transducer& fst,
+      bool compute_props = false) {
+    MutableTransducer* output = new MutableTransducer(fst);
+    fst::OptimizeDifferenceRhs(output, compute_props);
     return output;
   }
 
  protected:
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const vector<DataType*>& args) {
+                                      const std::vector<DataType*>& args) {
     if (args.size() != 1) {
       std::cout << "Optimize: Expected 1 argument but got " << args.size()
                 << std::endl;

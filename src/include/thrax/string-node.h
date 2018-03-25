@@ -30,7 +30,7 @@ class AstWalker;
 
 class StringNode : public Node {
  public:
-  StringNode(const string& str);
+  explicit StringNode(const string& str);
   virtual ~StringNode();
 
   const string& Get() const;

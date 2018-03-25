@@ -33,7 +33,7 @@ namespace thrax {
 template <typename Arc>
 class GrmManagerSpec : public AbstractGrmManager<Arc> {
   typedef AbstractGrmManager<Arc> Base;
-  typedef map<string, const typename Base::Transducer*> FstMap;
+  typedef std::map<string, const typename Base::Transducer*> FstMap;
 
  public:
   GrmManagerSpec() : Base() { }

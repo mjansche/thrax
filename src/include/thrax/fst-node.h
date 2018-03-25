@@ -69,7 +69,7 @@ class FstNode : public Node {
 
  protected:
   FstNodeType type_;
-  vector<Node*> arguments_;
+  std::vector<Node*> arguments_;
   StringNode* weight_;  // NULL = default weight.
   bool optimize_;
 

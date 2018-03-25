@@ -17,7 +17,9 @@
 #include <string>
 
 #include <thrax/arcsort.h>
+#include <thrax/assert-empty.h>
 #include <thrax/assert-equal.h>
+#include <thrax/assert-null.h>
 #include <thrax/cdrewrite.h>
 #include <thrax/closure.h>
 #include <thrax/compose.h>
@@ -41,6 +43,7 @@
 #include <thrax/reverse.h>
 #include <thrax/rewrite.h>
 #include <thrax/rmepsilon.h>
+#include <thrax/rmweight.h>
 #include <thrax/stringfile.h>
 #include <thrax/stringfst.h>
 #include <thrax/symboltable.h>
@@ -53,7 +56,9 @@ namespace function {
 void RegisterFunctions() {
   REGISTER_GRM_FUNCTION(Analyzer);
   REGISTER_GRM_FUNCTION(ArcSort);
+  REGISTER_GRM_FUNCTION(AssertEmpty);
   REGISTER_GRM_FUNCTION(AssertEqual);
+  REGISTER_GRM_FUNCTION(AssertNull);
   REGISTER_GRM_FUNCTION(Category);
   REGISTER_GRM_FUNCTION(CDRewrite);
   REGISTER_GRM_FUNCTION(Closure);
@@ -79,6 +84,7 @@ void RegisterFunctions() {
   REGISTER_GRM_FUNCTION(Reverse);
   REGISTER_GRM_FUNCTION(Rewrite);
   REGISTER_GRM_FUNCTION(RmEpsilon);
+  REGISTER_GRM_FUNCTION(RmWeight);
   REGISTER_GRM_FUNCTION(StringFile);
   REGISTER_GRM_FUNCTION(StringFst);
   REGISTER_GRM_FUNCTION(SymbolTable);

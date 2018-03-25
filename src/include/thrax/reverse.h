@@ -42,7 +42,7 @@ class Reverse : public UnaryFstFunction<Arc> {
 
  protected:
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const vector<DataType*>& args) {
+                                      const std::vector<DataType*>& args) {
     if (args.size() != 1) {
       std::cout << "Reverse: Expected 1 argument but got " << args.size()
                 << std::endl;

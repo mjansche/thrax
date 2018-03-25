@@ -31,13 +31,14 @@ class RewriteTesterUtils {
 
  private:
   // Sorts the output by increasing cost (Tropical semiring)
-  static bool SortOutput(std::pair<string, float> i, std::pair<string, float> j);
+  static bool SortOutput(std::pair<string, float> i,
+                         std::pair<string, float> j);
 
   // Reader for the input in interactive version.
   bool ReadInput(string* s);
 
   GrmManagerSpec<StdArc> grm_;
-  vector<string> rules_;
+  std::vector<string> rules_;
   Compiler* compiler_;
   fst::SymbolTable* byte_symtab_;
   fst::SymbolTable* utf8_symtab_;

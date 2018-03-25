@@ -18,6 +18,7 @@
 #define THRAX_EVALUATOR_H_
 
 #include <string.h>
+#include <fstream>
 #include <iostream> // NOLINT
 #include <map>
 #include <set>
@@ -87,7 +88,7 @@ class AstEvaluator : public AstWalker {
  public:
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
-  typedef map<int64, int64> LabelMapper;
+  typedef std::map<int64, int64> LabelMapper;
 
   // This constructor sets up the evaluator to run all nodes using a new
   // environment namespace.
@@ -377,7 +378,7 @@ class AstEvaluator : public AstWalker {
   // grammar). This information gets passed down ultimately to StringFst's
   // GetLabelSymbolTable to determine (assuming --save_symbols is set), whether
   // or not to add generated labels to the byte and utf8 symbol tables.
-  void GetFsts(map<string, const Transducer*>* fsts, bool top_level) {
+  void GetFsts(std::map<string, const Transducer*>* fsts, bool top_level) {
     // Check if we ever used generated labels.  If so, get the symbol table and
     // add it to a unique FST called kStringFstSymtabFst.
     fst::SymbolTable* generated_labels =
@@ -390,8 +391,8 @@ class AstEvaluator : public AstWalker {
     }
 
     // Get the exported FSTs and add them to the map.
-    for (set<IdentifierNode*>::const_iterator fst_i = exported_fsts_.begin();
-         fst_i != exported_fsts_.end(); ++fst_i) {
+    for (std::set<IdentifierNode*>::const_iterator fst_i =
+         exported_fsts_.begin(); fst_i != exported_fsts_.end(); ++fst_i) {
       const string& name = (*fst_i)->Get();
       // If always_export is set, an imported function, which in turn contains
       // a named fst variable, will have that variable exported when the
@@ -423,13 +424,16 @@ class AstEvaluator : public AstWalker {
     }
   }
 
-  void set_file(const string& file) { file_ = file; }
+  void set_file(const string& file) {
+    file_ = file;
+  }
 
  private:
   // Extract and interpret the proper arguments from an FstNode and bind them to
   // the DataType union.  On failure, we'll return NULL.
-  vector<DataType*>* GetArgumentsFromFstNode(FstNode* node, int num_arguments) {
-    vector<DataType*>* args = new vector<DataType*>();
+  std::vector<DataType*>* GetArgumentsFromFstNode(FstNode* node,
+                                                  int num_arguments) {
+    std::vector<DataType*>* args = new std::vector<DataType*>();
     for (int i = 0; i < num_arguments; ++i) {
       node->GetArgument(i)->Accept(this);
       DataType* return_value = GetReturnValue();
@@ -444,8 +448,8 @@ class AstEvaluator : public AstWalker {
   }
 
   // Do the same as above, but using a CollectionNode instead.
-  vector<DataType*>* GetArgumentsFromCollectionNode(CollectionNode* node) {
-    vector<DataType*>* args = new vector<DataType*>();
+  std::vector<DataType*>* GetArgumentsFromCollectionNode(CollectionNode* node) {
+    std::vector<DataType*>* args = new std::vector<DataType*>();
     for (int i = 0; i < node->Size(); ++i) {
       node->Get(i)->Accept(this);
       DataType* return_value = GetReturnValue();
@@ -466,7 +470,7 @@ class AstEvaluator : public AstWalker {
   DataType* MakeFstFromLocalFunction(FunctionNode* func_node,
                                      const Node& debug_location_node,
                                      Namespace* func_namespace,
-                                     vector<DataType*>* arguments) {
+                                     std::vector<DataType*>* arguments) {
     Namespace* prev_env_ = env_;
     env_ = func_namespace;
     env_->PushLocalEnvironment();
@@ -521,7 +525,7 @@ class AstEvaluator : public AstWalker {
   // and false otherwise.
   bool MakeFstFromCFunction(const string& function_name,
                             const Node& debug_location_node,
-                            vector<DataType*>* arguments,
+                            std::vector<DataType*>* arguments,
                             DataType** output) {
     function::Function<Arc>* func = GetFunction<Arc>(function_name);
     if (!func)       // If we get a NULL function, then the name was invalid,
@@ -543,31 +547,31 @@ class AstEvaluator : public AstWalker {
     switch (node->GetType()) {
       case FstNode::CONCAT_FSTNODE: {
         VLOG(2) << "Concat Fst:";
-        vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
+        std::vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
         CHECK(MakeFstFromCFunction("Concat", *node, args, &output));
         break;
       }
       case FstNode::UNION_FSTNODE: {
         VLOG(2) << "Union Fst:";
-        vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
+        std::vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
         CHECK(MakeFstFromCFunction("Union", *node, args, &output));
         break;
       }
       case FstNode::DIFFERENCE_FSTNODE: {
         VLOG(2) << "Difference Fst:";
-        vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
+        std::vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
         CHECK(MakeFstFromCFunction("Difference", *node, args, &output));
         break;
       }
       case FstNode::REWRITE_FSTNODE: {
         VLOG(2) << "Rewrite Fst:";
-        vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
+        std::vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
         CHECK(MakeFstFromCFunction("Rewrite", *node, args, &output));
         break;
       }
       case FstNode::REPETITION_FSTNODE: {
         VLOG(2) << "Repetition Fst:";
-        vector<DataType*>* args = GetArgumentsFromFstNode(node, 1);
+        std::vector<DataType*>* args = GetArgumentsFromFstNode(node, 1);
 
         RepetitionFstNode* rnode = static_cast<RepetitionFstNode*>(node);
         args->push_back(
@@ -586,7 +590,7 @@ class AstEvaluator : public AstWalker {
         VLOG(2) << "Composition Fst:";
         if (optimize_embedding_ > -1) optimize_embedding_++;
         if (optimize_embedding_ > 1) node->SetOptimize();
-        vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
+        std::vector<DataType*>* args = GetArgumentsFromFstNode(node, 2);
         args->push_back(new DataType("right"));  // ArcSort the right FST.
         CHECK(MakeFstFromCFunction("Compose", *node, args, &output));
         break;
@@ -622,7 +626,7 @@ class AstEvaluator : public AstWalker {
             static_cast<StringNode*>(node->GetArgument(0))->Get();
         VLOG(2) << "String Fst: " << text;
 
-        vector<DataType*>* args = new vector<DataType*>(2);
+        std::vector<DataType*>* args = new std::vector<DataType*>(2);
         (*args)[0] = new DataType(static_cast<int>(snode->GetParseMode()));
         (*args)[1] = new DataType(text);
 
@@ -645,7 +649,7 @@ class AstEvaluator : public AstWalker {
         VLOG(2) << "Function Call Fst: " << name;
         if (name == "Optimize") optimize_embedding_ = 0;
 
-        vector<DataType*>* args = GetArgumentsFromCollectionNode(
+        std::vector<DataType*>* args = GetArgumentsFromCollectionNode(
             static_cast<CollectionNode*>(node->GetArgument(1)));
         if (!Success() || !args) {
           Error(*func_identifier_node,
@@ -735,7 +739,7 @@ class AstEvaluator : public AstWalker {
                                   const string& weight_str) {
     // Generate the appropriate weight.
     typename Arc::Weight weight(0);
-    istringstream iss(weight_str);
+    std::istringstream iss(weight_str);
     iss >> weight;  // Interpret the weight instead of reading it as raw bytes.
 
     // Then, create a single state FST with the appropriate final state weight.
@@ -815,7 +819,7 @@ class AstEvaluator : public AstWalker {
   // A list of the names of the FSTs we want exported at the end.  We'll find
   // these FSTs from the local environment.  Note that these pointers are owned
   // by the original AST, not us.
-  set<IdentifierNode*> exported_fsts_;
+  std::set<IdentifierNode*> exported_fsts_;
 
   // A list of grammars that we've opened (and thus need to close at the end).
   // TODO(ttai): This is dangerous right now since if we have two simulatneous
@@ -823,7 +827,7 @@ class AstEvaluator : public AstWalker {
   // this.  It'd be nice to have a copy-function on the AST nodes so we can just
   // make a copy of the relevant bits of the AST (the function nodes) and store
   // just that.
-  static vector<GrmCompilerSpec<Arc>*> loaded_grammars_;
+  static std::vector<GrmCompilerSpec<Arc>*> loaded_grammars_;
 
   // This is the "return" datatype that is returned by a number of nodes.
   DataType* return_value_;
@@ -843,13 +847,13 @@ class AstEvaluator : public AstWalker {
 
   // Used in the evaluator to keep track of whether the same function name has
   // been defined in the current file more than once.
-  set<string> observed_function_names_;
+  std::set<string> observed_function_names_;
 
   DISALLOW_COPY_AND_ASSIGN(AstEvaluator<Arc>);
 };
 
 template <typename Arc>
-vector<GrmCompilerSpec<Arc>*> AstEvaluator<Arc>::loaded_grammars_;
+std::vector<GrmCompilerSpec<Arc>*> AstEvaluator<Arc>::loaded_grammars_;
 
 }  // namespace thrax
 

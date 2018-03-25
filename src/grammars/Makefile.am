@@ -1,7 +1,7 @@
 EXTRA_DIST = byte.grm bytestringcopy.grm numbers.grm example.grm \
-	ernest.txt assert.grm paradigms_and_features.grm pdt.grm mpdt.grm replace.grm \
-	README
-pkgdatadir=$(datarootdir)/thrax/grammars
+	ernest.txt assert.grm paradigms_and_features.grm pdt.grm mpdt.grm \
+	replace.grm tokenizer.grm README
+pkgdatadir=$(DESTDIR)$(datarootdir)/thrax/grammars
 
 install-data-local: $(EXTRA_DIST)
 	-mkdir -p -m 755 $(pkgdatadir)
@@ -16,6 +16,7 @@ install-data-local: $(EXTRA_DIST)
 	-cp -p $(srcdir)/paradigms_and_features.grm $(pkgdatadir)
 	-cp -p $(srcdir)/pdt.grm $(pkgdatadir)
 	-cp -p $(srcdir)/replace.grm $(pkgdatadir)
+	-cp -p $(srcdir)/tokenizer.grm $(pkgdatadir)
 
 uninstall-local:
 	-rm -rf $(pkgdatadir)

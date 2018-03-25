@@ -32,7 +32,7 @@ class IdentifierNode;
 
 class ReturnNode : public Node {
  public:
-  ReturnNode(Node* node);
+  explicit ReturnNode(Node* node);
   virtual ~ReturnNode();
 
   Node* Get() const;

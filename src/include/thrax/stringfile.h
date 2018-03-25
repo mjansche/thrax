@@ -51,7 +51,7 @@ class StringFile : public Function<Arc> {
   virtual ~StringFile() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() < 1 || args.size() > 3) {
       std::cout << "StringFile: Expected 1-3 arguments but got " << args.size()
                 << std::endl;
@@ -62,7 +62,7 @@ class StringFile : public Function<Arc> {
                 << std::endl;
       return NULL;
     }
-    int imode = fst::StringCompiler<Arc>::BYTE;
+    int imode = fst::StringTokenType::BYTE;
     const fst::SymbolTable* isymbols = NULL;
     if (args.size() == 1) {
       // If the StringFile call doesn't specify a parse mode, but if
@@ -72,37 +72,37 @@ class StringFile : public Function<Arc> {
     } else if (args.size() > 1) {
       if (args[1]->is<string>()) {
         if (*args[1]->get<string>() == "utf8") {
-          imode = fst::StringCompiler<Arc>::UTF8;
+          imode = fst::StringTokenType::UTF8;
           if (FLAGS_save_symbols) isymbols = GetUtf8SymbolTable();
         } else {
-          imode = fst::StringCompiler<Arc>::BYTE;
+          imode = fst::StringTokenType::BYTE;
           if (FLAGS_save_symbols) isymbols = GetByteSymbolTable();
         }
       } else if (args[1]->is<fst::SymbolTable>()) {
         isymbols = args[1]->get<fst::SymbolTable>();
-        imode = fst::StringCompiler<Arc>::SYMBOL;
+        imode = fst::StringTokenType::SYMBOL;
       } else {
         std::cout << "StringFile: Invalid parse mode or symbol table "
                   << "for input symbols" << std::endl;
         return NULL;
       }
     }
-    int omode = fst::StringCompiler<Arc>::BYTE;
+    int omode = fst::StringTokenType::BYTE;
     // If this is an acceptor then the output symbols are whatever the input
     // symbols are.
     const fst::SymbolTable* osymbols = isymbols;
     if (args.size() > 2) {
       if (args[2]->is<string>()) {
         if (*args[2]->get<string>() == "utf8") {
-          omode = fst::StringCompiler<Arc>::UTF8;
+          omode = fst::StringTokenType::UTF8;
           if (FLAGS_save_symbols) osymbols = GetUtf8SymbolTable();
         } else {
-          omode = fst::StringCompiler<Arc>::BYTE;
+          omode = fst::StringTokenType::BYTE;
           if (FLAGS_save_symbols) osymbols = GetByteSymbolTable();
         }
       } else if (args[2]->is<fst::SymbolTable>()) {
         osymbols = args[2]->get<fst::SymbolTable>();
-        omode = fst::StringCompiler<Arc>::SYMBOL;
+        omode = fst::StringTokenType::SYMBOL;
       } else {
         std::cout << "StringFile: Invalid parse mode or symbol table "
                   << "for output symbols" << std::endl;
@@ -119,15 +119,16 @@ class StringFile : public Function<Arc> {
     bool acceptor = true;
     for (InputBuffer ibuf(fp); ibuf.ReadLine(&line);
          /* ReadLine() automatically increments */) {
-      vector<string> words = Split(line, "\t");
+      std::vector<string> words =
+          Split(line, "\t");
       size_t size = words.size();
       if (size == 0) {
         ++linenum;
         continue;
       }
       // TODO(rws): Add ability to include weights
-      vector<Label> ilabels;
-      vector<Label> olabels;
+      std::vector<Label> ilabels;
+      std::vector<Label> olabels;
       if (size == 1) {
         ConvertStringToLabels(words[0], &ilabels, imode, isymbols);
         pt.Add(ilabels.begin(), ilabels.end(),
@@ -169,20 +170,20 @@ class StringFile : public Function<Arc> {
   // Same functionality as in StringCompiler (nlp/fst), but that is private to
   // the StringCompiler class
   bool ConvertStringToLabels(const string &str,
-                             vector<Label> *labels,
+                             std::vector<Label> *labels,
                              int token_type,
                              const fst::SymbolTable* syms) const {
     labels->clear();
-    if (token_type == fst::StringCompiler<Arc>::BYTE) {
+    if (token_type == fst::StringTokenType::BYTE) {
       for (size_t i = 0; i < str.size(); ++i)
         labels->push_back(static_cast<unsigned char>(str[i]));
-    } else if (token_type == fst::StringCompiler<Arc>::UTF8) {
+    } else if (token_type == fst::StringTokenType::UTF8) {
       return fst::UTF8StringToLabels(str, labels);
     } else {
       char *c_str = new char[str.size() + 1];
       str.copy(c_str, str.size());
       c_str[str.size()] = 0;
-      vector<char *> vec;
+      std::vector<char *> vec;
       string separator = "\n" + FLAGS_fst_field_separator;
       fst::SplitToVector(c_str, separator.c_str(), &vec, true);
       for (size_t i = 0; i < vec.size(); ++i) {

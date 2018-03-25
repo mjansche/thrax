@@ -1,6 +1,6 @@
-algo_include_headers = thrax/algo/cdrewrite.h \
+algo_include_headers = thrax/algo/cdrewrite.h thrax/algo/paths.h \
 		       thrax/algo/prefix_tree.h thrax/algo/resource-map.h \
-		       thrax/algo/optimize.h
+		       thrax/algo/optimize.h thrax/algo/stringprint.h
 
 compat_include_headers = thrax/compat/compat.h \
 			 thrax/compat/closure.h thrax/compat/oneof.h \
@@ -25,10 +25,10 @@ grm_include_headers = thrax/arcsort.h thrax/assert-equal.h \
 		      thrax/namespace.h thrax/node.h thrax/optimize.h \
 		      thrax/paradigm.h thrax/pdtcompose.h thrax/printer.h \
 		      thrax/project.h thrax/return-node.h thrax/reverse.h thrax/rewrite.h \
-		      thrax/rmepsilon.h thrax/rule-node.h thrax/statement-node.h \
-		      thrax/stringfile.h thrax/stringfst.h thrax/string-node.h \
-		      thrax/symbols.h thrax/symboltable.h thrax/thrax.h thrax/union.h\
-		      thrax/walker.h thrax/replace.h
+		      thrax/rmepsilon.h thrax/rule-node.h thrax/rmweight.h \
+			  thrax/statement-node.h thrax/stringfile.h thrax/stringfst.h \
+			  thrax/string-node.h thrax/symbols.h thrax/symboltable.h \
+			  thrax/thrax.h thrax/union.h thrax/walker.h thrax/replace.h
 
 nobase_include_HEADERS = $(algo_include_headers) $(compat_include_headers) \
 			 $(grm_include_headers)

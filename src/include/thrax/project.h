@@ -41,7 +41,7 @@ class Project : public UnaryFstFunction<Arc> {
 
  protected:
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const vector<DataType*>& args) {
+                                      const std::vector<DataType*>& args) {
     if (args.size() != 2) {
       std::cout << "Project: Expected 2 arguments but received " << args.size()
                 << std::endl;

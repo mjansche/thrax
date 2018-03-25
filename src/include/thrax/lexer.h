@@ -30,7 +30,10 @@
 #include <thrax/compat/compat.h>
 #include <thrax/compat/utils.h>
 
-DECLARE_int32(v);
+// Removed by Rosie-managed cl/136839945/  This was commented out to facilitate
+// changing the export scripts for the open source version of this code.
+// TODO(rws) Actually remove this when the scripts are updated.
+// DECLARE_int32(v);
 
 namespace thrax {
 
@@ -49,7 +52,7 @@ class Lexer {
     KEYWORD,               // reserved keywords
   };
 
-  static const set<string> kKeywords;
+  static const std::set<string> kKeywords;
 
   // Preprocessing - must be called before the grammar is processed via repeated
   // calls to YYLex().
@@ -124,7 +127,7 @@ class Lexer {
   };
 
   Token curr_token_;            // Current token data.
-  stack<GrammarFile> grammar_;
+  std::stack<GrammarFile> grammar_;
 
   GrammarFile *curr_file() { return &grammar_.top(); }
   const GrammarFile *curr_file() const { return &grammar_.top(); }

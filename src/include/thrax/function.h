@@ -46,7 +46,7 @@ class Function {
 
   // Runs the desired function by wrapping Execute() and then freeing the
   // arguments.
-  DataType* Run(vector<DataType*>* args) {
+  DataType* Run(std::vector<DataType*>* args) {
     DataType* return_value = Execute(*args);
 
     STLDeleteContainerPointers(args->begin(), args->end());
@@ -58,7 +58,7 @@ class Function {
  protected:
   // Actually performs the function's work, without deleting the provided
   // arguments.
-  virtual DataType* Execute(const vector<DataType*>& args) = 0;
+  virtual DataType* Execute(const std::vector<DataType*>& args) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(Function<Arc>);
@@ -96,7 +96,7 @@ class UnaryFstFunction : public Function<Arc> {
   virtual ~UnaryFstFunction() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() < 1) {
       std::cout << "UnaryFstFunction: Expected at least 1 argument"
                 << std::endl;
@@ -118,7 +118,7 @@ class UnaryFstFunction : public Function<Arc> {
   // should be allocated by this function.  Ownership of provided arguments
   // remains with the caller.  Return NULL to denote an error.
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const vector<DataType*>& args) = 0;
+                                      const std::vector<DataType*>& args) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(UnaryFstFunction);
@@ -134,7 +134,7 @@ class BinaryFstFunction : public Function<Arc> {
   virtual ~BinaryFstFunction() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() < 2) {
       std::cout << "BinaryFstFunction: Expected at least 2 arguments"
                 << std::endl;
@@ -158,7 +158,7 @@ class BinaryFstFunction : public Function<Arc> {
   // Same as above (with UnaryFstFunction), except now with two arguments.
   virtual Transducer* BinaryFstExecute(const Transducer& left,
                                        const Transducer& right,
-                                       const vector<DataType*>& args) = 0;
+                                       const std::vector<DataType*>& args) = 0;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(BinaryFstFunction);

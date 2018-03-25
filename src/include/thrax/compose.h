@@ -54,7 +54,7 @@ class Compose : public Function<Arc> {
   virtual ~Compose() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() != 2 && args.size() != 3) {
       std::cout << "Compose: Expected 2 or 3 arguments but got " << args.size()
                 << std::endl;

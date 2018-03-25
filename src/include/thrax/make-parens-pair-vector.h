@@ -34,9 +34,9 @@ namespace thrax {
 template <typename Arc>
 inline void MakeParensPairVector(
     const fst::VectorFst<Arc>& parens_transducer,
-    vector<std::pair<typename Arc::Label, typename Arc::Label> > *parens) {
-  set<typename Arc::Label> seen_labels;
-  typename set<typename Arc::Label>::iterator iter;
+    std::vector<std::pair<typename Arc::Label, typename Arc::Label> > *parens) {
+  std::set<typename Arc::Label> seen_labels;
+  typename std::set<typename Arc::Label>::iterator iter;
   for (typename Arc::StateId s = 0; s < parens_transducer.NumStates(); ++s) {
     fst::ArcIterator<fst::VectorFst<Arc> > aiter(parens_transducer, s);
     while (!aiter.Done()) {
@@ -78,10 +78,11 @@ inline void MakeParensPairVector(
 template <typename Arc>
 inline void MakeAssignmentsVector(
     const fst::VectorFst<Arc>& assignments_transducer,
-    const vector<std::pair<typename Arc::Label, typename Arc::Label> >& parens,
-    vector<typename Arc::Label>* assignments) {
-  map<typename Arc::Label, typename Arc::Label> assignment_map;
-  typename map<typename Arc::Label, typename Arc::Label>::iterator iter;
+    const std::vector<std::pair<typename Arc::Label, typename Arc::Label> >&
+        parens,
+    std::vector<typename Arc::Label>* assignments) {
+  std::map<typename Arc::Label, typename Arc::Label> assignment_map;
+  typename std::map<typename Arc::Label, typename Arc::Label>::iterator iter;
   for (typename Arc::StateId s = 0;
        s < assignments_transducer.NumStates();
        ++s) {

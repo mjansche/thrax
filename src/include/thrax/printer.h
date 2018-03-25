@@ -44,7 +44,7 @@ class StringNode;
 class AstPrinter : public AstWalker {
  public:
   AstPrinter();
-  explicit AstPrinter(ostream& output_stream);
+  explicit AstPrinter(std::ostream& output_stream);
   virtual ~AstPrinter();
 
   virtual void Visit(CollectionNode* node);
@@ -71,7 +71,7 @@ class AstPrinter : public AstWalker {
   // A scoped counter that increments and decrements the spacing as necessary.
   class ScopedSpaceCounter {
    public:
-    ScopedSpaceCounter(int* num_spaces);
+    explicit ScopedSpaceCounter(int* num_spaces);
     ~ScopedSpaceCounter();
 
    private:
@@ -80,8 +80,10 @@ class AstPrinter : public AstWalker {
 
   int num_spaces_;
 
+  mutable bool argument_;
+
   // This is the actual stream to which we write out, which we do not own.
-  ostream& out;
+  std::ostream& out;
 
   DISALLOW_COPY_AND_ASSIGN(AstPrinter);
 };

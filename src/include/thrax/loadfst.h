@@ -46,7 +46,7 @@ class LoadFst : public Function<Arc> {
   virtual ~LoadFst() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() != 1) {
       std::cout << "LoadFst: Expected 1 argument but got " << args.size()
                 << std::endl;

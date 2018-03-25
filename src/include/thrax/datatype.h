@@ -18,6 +18,8 @@
 
 #include <string>
 
+#include <utility>
+using std::pair; using std::make_pair;
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
 #include <fst/fstlib.h>
@@ -28,8 +30,7 @@ namespace thrax {
 class DataType {
  public:
   template <typename T>
-  explicit DataType(T thing)
-      : thing_(thing) {}
+  explicit DataType(T thing) : thing_(std::move(thing)) {}
 
   DataType* Copy() const {
     if (is<fst::Fst<fst::StdArc>*>()) {

@@ -51,7 +51,7 @@ class Concat : public BinaryFstFunction<Arc> {
  protected:
   virtual Transducer* BinaryFstExecute(const Transducer& left,
                                        const Transducer& right,
-                                       const vector<DataType*>& args) {
+                                       const std::vector<DataType*>& args) {
     if (args.size() != 2) {
       std::cout << "Concat: Expected 2 arguments but got " << args.size()
                 << std::endl;
@@ -93,7 +93,7 @@ class ConcatDelayed : public BinaryFstFunction<Arc> {
  protected:
   virtual Transducer* BinaryFstExecute(const Transducer& left,
                                        const Transducer& right,
-                                       const vector<DataType*>& args) {
+                                       const std::vector<DataType*>& args) {
     if (args.size() != 2) {
       std::cout << "ConcatDelayed: Expected 2 arguments but got " << args.size()
                 << std::endl;

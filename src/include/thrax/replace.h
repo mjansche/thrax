@@ -52,7 +52,7 @@ class Replace : public Function<Arc> {
 
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() < 3) {
       std::cout << "Replace: Expected at least 3 arguments but got "
                 << args.size() << std::endl;
@@ -74,7 +74,7 @@ class Replace : public Function<Arc> {
     }
 
     MutableTransducer label_transducer(**args[0]->get<Transducer*>());
-    vector<Label> labels;
+    std::vector<Label> labels;
     ExtractReplacementLabels(&label_transducer, &labels);
     if (labels.empty()) {
       std::cout << "Replace: No labels provided" << std::endl;
@@ -89,7 +89,7 @@ class Replace : public Function<Arc> {
 
     Label root = labels[0];
 
-    vector<std::pair<Label, const Transducer*> > ifst_array;
+    std::vector<std::pair<Label, const Transducer*> > ifst_array;
 
     for (int i = 1; i < args.size(); ++i) {
       const Transducer* fst = *args[i]->get<Transducer*>();
@@ -114,7 +114,7 @@ class Replace : public Function<Arc> {
 
  private:
   void ExtractReplacementLabels(MutableTransducer* fst,
-                                vector<Label>* labels) {
+                                std::vector<Label>* labels) {
     fst::RmEpsilon(fst);
     typename Arc::StateId s = fst->Start();
     while (fst->Final(s) == Arc::Weight::Zero()) {

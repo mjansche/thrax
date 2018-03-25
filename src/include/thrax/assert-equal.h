@@ -67,7 +67,7 @@ class AssertEqual : public BinaryFstFunction<Arc> {
  protected:
   virtual Transducer* BinaryFstExecute(const Transducer& left,
                                        const Transducer& right,
-                                       const vector<DataType*>& args) {
+                                       const std::vector<DataType*>& args) {
     if (args.size() < 2 || args.size() > 3) {
       std::cout << "AssertEqual: Expected 2 or 3 arguments but got "
                 << args.size() << std::endl;
@@ -75,19 +75,18 @@ class AssertEqual : public BinaryFstFunction<Arc> {
     }
 
     // Optional third argument specifying the symbol table to use
-    typename fst::StringPrinter<Arc>::TokenType mode =
-        fst::StringPrinter<Arc>::BYTE;
+    typename fst::StringTokenType mode = fst::StringTokenType::BYTE;
     const fst::SymbolTable* symbols = nullptr;
     if (args.size() > 2) {
       if (args[2]->is<string>()) {
         if (*args[2]->get<string>() == "utf8") {
-          mode = fst::StringPrinter<Arc>::UTF8;
+          mode = fst::StringTokenType::UTF8;
         } else {
-          mode = fst::StringPrinter<Arc>::BYTE;
+          mode = fst::StringTokenType::BYTE;
         }
       } else if (args[2]->is<fst::SymbolTable>()) {
         symbols = args[2]->get<fst::SymbolTable>();
-        mode = fst::StringPrinter<Arc>::SYMBOL;
+        mode = fst::StringTokenType::SYMBOL;
       } else {
         std::cout << "AssertEqual: Invalid parse mode or symbol table "
                   << "for symbols" << std::endl;

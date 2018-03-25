@@ -84,7 +84,8 @@ class ResourceMap {
     // Search the map for the correct hash position of the new insert.  We'll
     // use NULL as the value for now since we'll create it from scratch in the
     // future, after the potential deletion of the pre-existing object.
-    std::pair<Map::iterator, bool> ret = map_.insert(Map::value_type(name, NULL));
+    std::pair<Map::iterator, bool> ret =
+        map_.insert(Map::value_type(name, NULL));
     if (!ret.second)             // Already exists in the map, so we'll get rid
       delete ret.first->second;  // of the old value.
 

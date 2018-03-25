@@ -15,78 +15,73 @@
 //
 // Definitions needed by various utilities here.
 
+#include <fst/compat.h>
+#include <thrax/compat/compat.h>
+#include <../bin/utildefs.h>
+
+#include <stack>
 #include <string>
+#include <utility>
+using std::pair; using std::make_pair;
 #include <vector>
 using std::vector;
 
-#include <fst/compat.h>
-#include <thrax/compat/compat.h>
 #include <fst/arc.h>
 #include <fst/fst.h>
 #include <fst/string.h>
 #include <fst/symbol-table.h>
 #include <fst/vector-fst.h>
+#include <thrax/algo/paths.h>
 #include <thrax/grm-manager.h>
-#include <../bin/utildefs.h>
+
+DEFINE_string(field_separator, " ",
+              "Field separator for strings of symbols from a symbol table.");
 
 namespace thrax {
 
-bool VisitState(const Transducer& fst,
-                TokenType type,
-                const SymbolTable* generated_symtab,
-                SymbolTable* symtab,
-                StdArc::StateId state,
-                const string& path,
-                float cost,
-                vector<std::pair<string, float> >* paths) {
-  if (fst.Final(state) != StdArc::Weight::Zero()) {
-    paths->push_back(std::make_pair(path, cost + fst.Final(state).Value()));
-  }
-  fst::ArcIterator<Transducer> aiter(fst, state);
-  for (; !aiter.Done(); aiter.Next()) {
-    const StdArc &arc = aiter.Value();
-    string newpath = path;
-    if (arc.olabel != 0) {
-      // Check first to see if this label is in the generated symbol set. Note
-      // that this should not conflict with a user-provided symbol table since
-      // the parser used by GrmCompiler doesn't generate extra labels if a
-      // string is parsed using a user-provided symbol table.
-      if (generated_symtab &&
-          !generated_symtab->Find(arc.olabel).empty()) {
-        string sym = generated_symtab->Find(arc.olabel);
-        newpath += "[" + sym + "]";
-      } else if (type == SYMBOL) {
-        string sym = symtab->Find(arc.olabel);
-        if (sym == "") {
-          LOG(ERROR) << "Missing symbol in symbol table for id: " << arc.olabel;
-          return false;
-        }
-        newpath += sym;
-      } else if (type == BYTE) {
-        newpath.push_back(arc.olabel);
-      } else if (type == UTF8) {
-        string utf8_string;
-        vector<int> labels;
-        labels.push_back(arc.olabel);
-        if (!fst::LabelsToUTF8String(labels, &utf8_string)) {
-          LOG(ERROR) << "LabelsToUTF8String: Bad code point: "
-                     << arc.olabel;
-          return false;
-        }
-        newpath += utf8_string;
+namespace {
+inline bool AppendLabel(StdArc::Label label, TokenType type,
+                        const SymbolTable* generated_symtab,
+                        SymbolTable* symtab, string* path) {
+  if (label != 0) {
+    // Check first to see if this label is in the generated symbol set. Note
+    // that this should not conflict with a user-provided symbol table since
+    // the parser used by GrmCompiler doesn't generate extra labels if a
+    // string is parsed using a user-provided symbol table.
+    if (generated_symtab && !generated_symtab->Find(label).empty()) {
+      string sym = generated_symtab->Find(label);
+      *path += "[" + sym + "]";
+    } else if (type == SYMBOL) {
+      string sym = symtab->Find(label);
+      if (sym == "") {
+        LOG(ERROR) << "Missing symbol in symbol table for id: " << label;
+        return false;
       }
-    }
-    if (!VisitState(fst, type, generated_symtab,
-                    symtab, arc.nextstate, newpath,
-                    cost + arc.weight.Value(), paths)) {
-      return false;
+      // For non-byte or utf8 symbols, one overwhelmingly wants these to be
+      // space-separated.
+      if (*path != "") {
+        *path += FLAGS_field_separator;
+      }
+      *path += sym;
+    } else if (type == BYTE) {
+      path->push_back(label);
+    } else if (type == UTF8) {
+      string utf8_string;
+      std::vector<int> labels;
+      labels.push_back(label);
+      if (!fst::LabelsToUTF8String(labels, &utf8_string)) {
+        LOG(ERROR) << "LabelsToUTF8String: Bad code point: " << label;
+        return false;
+      }
+      *path += utf8_string;
     }
   }
   return true;
 }
+}  // namespace
 
 bool FstToStrings(const Transducer& fst,
-                  vector<std::pair<string, float> >* strings,
+                  std::vector<std::pair<string, float> >* strings,
                   const SymbolTable* generated_symtab,
                   TokenType type,
                   SymbolTable* symtab,
@@ -98,8 +93,17 @@ bool FstToStrings(const Transducer& fst,
   if (temp.Start() == fst::kNoStateId) {
     return false;
   }
-  return VisitState(temp, type, generated_symtab, symtab,
-                    temp.Start(), string(), 0, strings);
+  for (fst::PathIterator<StdArc> iter(temp, /*check_acyclic*/ false);
+       !iter.Done(); iter.Next()) {
+    string path;
+    for (auto label : iter.OValue()) {
+      if (!AppendLabel(label, type, generated_symtab, symtab, &path)) {
+        return false;
+      }
+    }
+    strings->emplace_back(std::move(path), iter.Weight().Value());
+  }
+  return true;
 }
 
 const fst::SymbolTable*

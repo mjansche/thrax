@@ -42,7 +42,6 @@ using thrax::FstToStrings;
 using thrax::GetGeneratedSymbolTable;
 using thrax::GrmManagerSpec;
 using thrax::Split;
-using thrax::VisitState;
 typedef VectorFst<StdArc> Transducer;
 typedef StdArc::Label Label;
 
@@ -96,8 +95,8 @@ int main(int argc, char** argv) {
   // cleaning this up.
   fst::StdVectorFst cleaned(*fst);
   fst::RmEpsilon(&cleaned);
-  vector<std::pair<string, float> > istrings;
-  vector<std::pair<string, float> > ostrings;
+  std::vector<std::pair<string, float> > istrings;
+  std::vector<std::pair<string, float> > ostrings;
   fst::UniformArcSelector<StdArc> uniform_selector;
   fst::RandGenOptions< fst::UniformArcSelector<StdArc> >
       opts(uniform_selector, INT_MAX, 1, true, false);

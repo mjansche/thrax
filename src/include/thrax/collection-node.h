@@ -32,7 +32,7 @@ class AstWalker;
 
 class CollectionNode : public Node {
  public:
-  typedef deque<Node*> Collection;
+  typedef std::deque<Node*> Collection;
 
   CollectionNode();
   virtual ~CollectionNode();

@@ -192,7 +192,7 @@ void SymbolTableBuilder::GenerateUtf8SymbolTable() {
   utf8_symbols_ = new fst::SymbolTable(kUtf8SymbolTableName);
   utf8_symbols_->AddSymbol("<epsilon>", 0);
   for (int c = 1; c < 0x10000; ++c) {
-    vector<int> labels;
+    std::vector<int> labels;
     labels.push_back(c);
     string utf8_label;
     if (fst::LabelsToUTF8String(labels, &utf8_label)) {

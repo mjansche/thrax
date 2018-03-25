@@ -57,7 +57,7 @@ class CDRewrite : public Function<Arc> {
   CDRewrite() : Function<Arc>() {}
   virtual ~CDRewrite() {}
 
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() != 4 && args.size() != 6) {
       std::cout << "CDRewrite: Expected 4 or 6 arguments but received "
                 << args.size() << std::endl;

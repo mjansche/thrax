@@ -70,27 +70,26 @@ class StringFst : public Function<Arc> {
   virtual ~StringFst() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     CHECK_GE(args.size(), 2);
 
     // Find the mode (and maybe the symbol table).
-    enum fst::StringCompiler<Arc>::TokenType mode =
-        fst::StringCompiler<Arc>::BYTE;
+    enum fst::StringTokenType mode = fst::StringTokenType::BYTE;
     const fst::SymbolTable* symtab = NULL;
     switch (*args[0]->get<int>()) {
       case StringFstNode::BYTE: {
         CHECK_EQ(args.size(), 2);
-        mode = fst::StringCompiler<Arc>::BYTE;
+        mode = fst::StringTokenType::BYTE;
         break;
       }
       case StringFstNode::UTF8: {
         CHECK_EQ(args.size(), 2);
-        mode = fst::StringCompiler<Arc>::UTF8;
+        mode = fst::StringTokenType::UTF8;
         break;
       }
       case StringFstNode::SYMBOL_TABLE: {
         CHECK_EQ(args.size(), 3);
-        mode = fst::StringCompiler<Arc>::SYMBOL;
+        mode = fst::StringTokenType::SYMBOL;
         if (!args[2]->is<fst::SymbolTable>()) {
           std::cout
               << "StringFst: Invalid symbol table for symbol table parse mode"
@@ -121,7 +120,7 @@ class StringFst : public Function<Arc> {
     for (int i = 0; i < text.length(); ++i) {
       char c = text[i];
 
-      if (c == '[' && mode != fst::StringCompiler<Arc>::SYMBOL) {
+      if (c == '[' && mode != fst::StringTokenType::SYMBOL) {
         if (in_genlab) {
           std::cout << "StringFst: Cannot start new generated label while in "
                     << "previous label" << std::endl;
@@ -135,7 +134,7 @@ class StringFst : public Function<Arc> {
           return NULL;
         }
         in_genlab = true;
-      } else if (c == ']' && mode != fst::StringCompiler<Arc>::SYMBOL) {
+      } else if (c == ']' && mode != fst::StringTokenType::SYMBOL) {
         if (!in_genlab) {
           std::cout
               << "StringFst: Cannot terminate generated label without already "
@@ -199,7 +198,7 @@ class StringFst : public Function<Arc> {
       if (symtab) {
         fst->SetInputSymbols(symtab);
         fst->SetOutputSymbols(symtab);
-      } else if (mode == fst::StringCompiler<Arc>::UTF8) {
+      } else if (mode == fst::StringTokenType::UTF8) {
         fst->SetInputSymbols(GetUtf8SymbolTable());
         fst->SetOutputSymbols(GetUtf8SymbolTable());
       } else {
@@ -355,7 +354,7 @@ class StringFst : public Function<Arc> {
   }
 
   static bool GetSingleUtf8Label(const string& symbol, int64* label) {
-    vector<int64> labels;
+    std::vector<int64> labels;
     fst::UTF8StringToLabels(symbol, &labels);
     if (labels.size() == 1) {
       *label = labels[0];
@@ -365,7 +364,7 @@ class StringFst : public Function<Arc> {
   }
 
   bool AddGeneratedLabel(string* symbol, MutableTransducer* fst,
-                         enum fst::StringCompiler<Arc>::TokenType mode) {
+                         enum fst::StringTokenType mode) {
     VLOG(3) << "Finding label for symbol: " << *symbol;
     int64 label;
 
@@ -393,7 +392,7 @@ class StringFst : public Function<Arc> {
       } else if (symbol->size() == 1) {
         label = (*symbol)[0];
         WarnSingleCharacter(*symbol, label);
-      } else if (mode == fst::StringCompiler<Arc>::UTF8 &&
+      } else if (mode == fst::StringTokenType::UTF8 &&
                  GetSingleUtf8Label(*symbol, &label)) {
         WarnSingleCharacter(*symbol, label);
       } else {
@@ -439,11 +438,11 @@ class StringFst : public Function<Arc> {
     next_label_ = FLAGS_generated_label_start_index;
   }
 
-  typedef map<string, int64> Map;
+  typedef std::map<string, int64> Map;
   static Map symbol_label_map_;
-  typedef map<int64, string> InverseMap;
+  typedef std::map<int64, string> InverseMap;
   static InverseMap label_symbol_map_;
-  typedef map<int64, int64> Remap;
+  typedef std::map<int64, int64> Remap;
   static Remap remap_;
   static int64 next_label_;
   static fst::Mutex map_mutex_;

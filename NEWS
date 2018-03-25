@@ -58,3 +58,8 @@ Thrax - Release 1.2.1
 Thrax - Release 1.2.2
 
 * Compatibility release for OpenFst 1.5.2.
+
+Thrax - Release 1.2.3
+
+* Properly adds AssertEmpty, AssertEqual and RmWeight functions.
+* Adds fix suggested by Damir Cavar to allow for compilation under Cygwin.

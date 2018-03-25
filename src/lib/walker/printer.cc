@@ -33,10 +33,10 @@
 
 namespace thrax {
 
-AstPrinter::AstPrinter() : num_spaces_(0), out(std::cout) {}
+AstPrinter::AstPrinter() : num_spaces_(0), argument_(false), out(std::cout) {}
 
-AstPrinter::AstPrinter(ostream& output_stream)
-    : num_spaces_(0), out(output_stream) {}
+AstPrinter::AstPrinter(std::ostream& output_stream)
+    : num_spaces_(0), argument_(false), out(output_stream) {}
 
 AstPrinter::~AstPrinter() {}
 
@@ -77,8 +77,10 @@ void AstPrinter::Visit(FstNode* node) {
 
   if (node->NumArguments() > 0) {
     out << Spaces(node) << "Arguments:" << std::endl;
-    for (int i = 0; i < node->NumArguments(); ++i)
+    for (int i = 0; i < node->NumArguments(); ++i) {
+      argument_ = true;
       node->GetArgument(i)->Accept(this);
+    }
   }
   if (node->HasWeight())
     out << Spaces(node) << "Weight: " << node->GetWeight() << std::endl;
@@ -153,10 +155,14 @@ void AstPrinter::Visit(StringNode* node) {
 string AstPrinter::Spaces(Node *node) const {
   string output;
   for (int i = 0; i < num_spaces_; ++i) {
-    if (i != num_spaces_ - 1)
+    if (i != num_spaces_ - 1) {
       output += "|   ";
-    else
+    } else if (argument_) {
+      output += "| - ";
+      argument_ = false;
+    } else {
       output += "|-- ";
+    }
   }
   if (include_line_numbers) {
     output += std::to_string(node->getline()) + "-";

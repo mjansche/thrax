@@ -52,7 +52,7 @@ class IdentifierNode : public Node {
   bool HasNamespaces() const;
 
   // STL-style iterator-based accessors of the namespace list.
-  typedef vector<string>::const_iterator const_iterator;
+  typedef std::vector<string>::const_iterator const_iterator;
   const_iterator begin() const;
   const_iterator end() const;
 
@@ -70,7 +70,7 @@ class IdentifierNode : public Node {
 
   string full_name_;
   string identifier_;
-  vector<string> namespaces_;  // The full_name_ broken up by namespaces.
+  std::vector<string> namespaces_;  // The full_name_ broken up by namespaces.
   int begin_pos_;
   bool valid_;
 

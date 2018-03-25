@@ -29,6 +29,12 @@
 #include <vector>
 #include <unistd.h>
 
+// For Cygwin and other installations that do not define ACCESSPERMS (thanks to
+// Damir Cavar).
+#ifndef ACCESSPERMS
+#define ACCESSPERMS (S_IRWXU|S_IRWXG|S_IRWXO)
+#endif
+
 namespace thrax {
 
 using std::string;
@@ -149,7 +155,11 @@ bool Readable(const string& f) {
 void ReadFileToStringOrDie(const string& file, string* store) {
   ifstream stream(file.c_str(), ios::in);
   if (stream.fail()) {
-    LOG(FATAL) << "Can't open file " << file << " for reading";
+    if (file.empty()) {
+      LOG(FATAL) << "No file specified for reading";
+    } else {
+      LOG(FATAL) << "Can't open file " << file << " for reading";
+    }
   }
   stream.seekg(0, ios::end);
   size_t length = stream.tellg();
@@ -203,7 +213,11 @@ File* Open(const string& filename, const string& mode) {
 File* OpenOrDie(const string& filename, const string& mode) {
   File* file = Open(filename, mode);
   if (!file) {
-    LOG(FATAL) << "Can't open file " << filename << " for reading";
+    if (filename.empty()) {
+      LOG(FATAL) << "No file specified";
+    } else {
+      LOG(FATAL) << "Can't open file " << filename << " for reading";
+    }
   }
   return file;
 }

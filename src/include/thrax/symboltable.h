@@ -43,7 +43,7 @@ class SymbolTable : public Function<Arc> {
   virtual ~SymbolTable() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     if (args.size() != 1) {
       std::cout << "SymbolTable: Expected 1 argument but got " << args.size()
                 << std::endl;

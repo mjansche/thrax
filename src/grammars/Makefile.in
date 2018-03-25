@@ -111,7 +111,7 @@ am__can_run_installinfo = \
   esac
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
-pkgdatadir = $(datarootdir)/thrax/grammars
+pkgdatadir = $(DESTDIR)$(datarootdir)/thrax/grammars
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -234,8 +234,8 @@ top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 EXTRA_DIST = byte.grm bytestringcopy.grm numbers.grm example.grm \
-	ernest.txt assert.grm paradigms_and_features.grm pdt.grm mpdt.grm replace.grm \
-	README
+	ernest.txt assert.grm paradigms_and_features.grm pdt.grm mpdt.grm \
+	replace.grm tokenizer.grm README
 
 all: all-am
 
@@ -442,6 +442,7 @@ install-data-local: $(EXTRA_DIST)
 	-cp -p $(srcdir)/paradigms_and_features.grm $(pkgdatadir)
 	-cp -p $(srcdir)/pdt.grm $(pkgdatadir)
 	-cp -p $(srcdir)/replace.grm $(pkgdatadir)
+	-cp -p $(srcdir)/tokenizer.grm $(pkgdatadir)
 
 uninstall-local:
 	-rm -rf $(pkgdatadir)

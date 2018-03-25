@@ -118,7 +118,7 @@ class GrmCompilerSpec : public GrmCompilerParserInterface {
  private:
   Lexer lexer_;
 
-  vector<Node*> asts_;  // The list of actual ASTs owned by this compiler.
+  std::vector<Node*> asts_;  // The list of actual ASTs owned by this compiler.
   Node* root_;          // A pointer to the most recent AST.
 
   GrmManagerSpec<Arc> grm_manager_;  // The manager that holds all of the FSTs.
@@ -220,11 +220,12 @@ void GrmCompilerSpec<Arc>::Error(const string& message) {
 
 template <typename Arc>
 bool GrmCompilerSpec<Arc>::ParseFile(const string &filename) {
-  VLOG(1) << "Parsing file: " << filename;
+  string local_grammar = JoinPath(FLAGS_indir, filename);
+  VLOG(1) << "Parsing file: " << local_grammar;
 
   file_ = filename;
   string contents;
-  ReadFileToStringOrDie(filename, &contents);
+  ReadFileToStringOrDie(local_grammar, &contents);
   // Adds a newline in case one was left off. It doesn't hurt to have an extra
   // one (so not worth checking to see if one is already there), but the bison
   // parser fails for cryptic reasons if one is missing.

@@ -44,7 +44,7 @@ class ArcSort : public UnaryFstFunction<Arc> {
 
  protected:
   virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const vector<DataType*>& args) {
+                                      const std::vector<DataType*>& args) {
     if (args.size() != 2) {
       std::cout << "ArcSort: Expected 2 arguments but received " << args.size()
                 << std::endl;

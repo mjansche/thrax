@@ -99,7 +99,7 @@ class Analyzer : public Function<Arc> {
   virtual ~Analyzer() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     CHECK_EQ(args.size(), 4);
     MutableTransducer paradigm(**args[0]->get<Transducer*>());
     MutableTransducer stems(**args[1]->get<Transducer*>());
@@ -179,7 +179,7 @@ class Tagger : public Function<Arc> {
   virtual ~Tagger() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     CHECK_EQ(args.size(), 5);
     MutableTransducer paradigm(**args[0]->get<Transducer*>());
     MutableTransducer stems(**args[1]->get<Transducer*>());
@@ -235,7 +235,7 @@ class ParadigmReplace : public Function<Arc> {
   virtual ~ParadigmReplace() {}
 
  protected:
-  virtual DataType* Execute(const vector<DataType*>& args) {
+  virtual DataType* Execute(const std::vector<DataType*>& args) {
     CHECK_EQ(args.size(), 3);
     MutableTransducer paradigm(**args[0]->get<Transducer*>());
     MutableTransducer old_forms(**args[1]->get<Transducer*>());

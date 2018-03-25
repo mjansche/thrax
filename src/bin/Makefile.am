@@ -23,9 +23,9 @@ endif
 EXTRA_DIST = thraxmakedep
 
 install-exec-local: $(EXTRA_DIST)
-	-mkdir -p -m 755 $(bindir)
-	-cp -p $(srcdir)/thraxmakedep $(bindir)
-	-chmod a+x $(bindir)/thraxmakedep
+	-mkdir -p -m 755 $(DESTDIR)$(bindir)
+	-cp -p $(srcdir)/thraxmakedep $(DESTDIR)$(bindir)
+	-chmod a+x $(DESTDIR)$(bindir)/thraxmakedep
 
 uninstall-local:
-	-rm -f $(bindir)/thraxmakedep
+	-rm -f $(DESTDIR)$(bindir)/thraxmakedep

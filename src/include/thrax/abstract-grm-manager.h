@@ -52,10 +52,10 @@ class AbstractGrmManager {
   virtual ~AbstractGrmManager();
 
   // Read-only access to the underlying FST map.
-  const map<string, const Transducer*> &GetFstMap() const { return fsts_; }
+  const std::map<string, const Transducer*> &GetFstMap() const { return fsts_; }
 
   // Compile-time access to the FST table.
-  map<string, const Transducer*> *GetFstMap() { return &fsts_; }
+  std::map<string, const Transducer*> *GetFstMap() { return &fsts_; }
 
   // ***************************************************************************
   // REWRITE: These functions perform the actual rewriting of inputs using the
@@ -126,7 +126,7 @@ class AbstractGrmManager {
   bool LoadArchive(FarReader *reader);
 
   // The list of FSTs held by this manager.
-  map<string, const Transducer*> fsts_;
+  std::map<string, const Transducer*> fsts_;
 
  private:
   DISALLOW_COPY_AND_ASSIGN(AbstractGrmManager);
@@ -157,7 +157,8 @@ bool AbstractGrmManager<Arc>::LoadArchive(FarReader *reader) {
 
 template <typename Arc>
 void AbstractGrmManager<Arc>::SortRuleInputLabels() {
-  for (typename map<string, const Transducer*>::iterator pos = fsts_.begin();
+  for (typename std::map<string, const Transducer*>::iterator pos =
+           fsts_.begin();
        pos != fsts_.end(); ++pos) {
     const Transducer *fst = pos->second;
     if (!fst->Properties(fst::kILabelSorted, false)) {
@@ -173,7 +174,7 @@ void AbstractGrmManager<Arc>::SortRuleInputLabels() {
 template <typename Arc>
 const typename AbstractGrmManager<Arc>::Transducer*
 AbstractGrmManager<Arc>::GetFst(const string& name) const {
-  typename map<string, const Transducer*>::const_iterator pos =
+  typename std::map<string, const Transducer*>::const_iterator pos =
       fsts_.find(name);
   if (pos != fsts_.end()) {
     return pos->second;
@@ -210,8 +211,7 @@ bool AbstractGrmManager<Arc>::RewriteBytes(
     string* output,
     const string& pdt_parens_rule,
     const string& mpdt_assignments_rule) const {
-  fst::StringCompiler<Arc>
-      string_compiler(fst::StringCompiler<Arc>::BYTE);
+  fst::StringCompiler<Arc> string_compiler(fst::StringTokenType::BYTE);
   MutableTransducer str_fst;
   if (!string_compiler(input, &str_fst))
     return false;
@@ -233,7 +233,7 @@ bool AbstractGrmManager<Arc>::RewriteBytes(
 
   StringifyFst(&output_fst);
 
-  fst::StringPrinter<Arc> printer(fst::StringPrinter<Arc>::BYTE);
+  fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE);
   return printer(output_fst, output);
 }
 
@@ -243,8 +243,7 @@ bool AbstractGrmManager<Arc>::Rewrite(
     MutableTransducer* output,
     const string& pdt_parens_rule,
     const string& mpdt_assignments_rule) const {
-  fst::StringCompiler<Arc>
-      string_compiler(fst::StringCompiler<Arc>::BYTE);
+  fst::StringCompiler<Arc> string_compiler(fst::StringTokenType::BYTE);
   MutableTransducer str_fst;
   if (!string_compiler(input, &str_fst))
     return false;
@@ -291,7 +290,7 @@ bool AbstractGrmManager<Arc>::Rewrite(
 
   if (pdt_parens_fst) {
     MutableTransducer mut_pdt_parens_fst(*pdt_parens_fst);
-    vector<std::pair<Label, Label> > pdt_parens;
+    std::vector<std::pair<Label, Label> > pdt_parens;
     MakeParensPairVector(mut_pdt_parens_fst, &pdt_parens);
 
     // EXPAND_FILTER removes the parentheses, allowing for subsequent
@@ -299,7 +298,7 @@ bool AbstractGrmManager<Arc>::Rewrite(
     // ShortestPath().
     if (mpdt_assignments_fst) {
       MutableTransducer mut_mpdt_assignments_fst(*mpdt_assignments_fst);
-      vector<Label> mpdt_assignments;
+      std::vector<Label> mpdt_assignments;
       MakeAssignmentsVector(mut_mpdt_assignments_fst, pdt_parens,
                             &mpdt_assignments);
       fst::MPdtComposeOptions opts(true, fst::EXPAND_FILTER);

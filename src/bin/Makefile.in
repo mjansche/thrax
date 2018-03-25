@@ -687,12 +687,12 @@ uninstall-am: uninstall-binPROGRAMS uninstall-local
 
 
 install-exec-local: $(EXTRA_DIST)
-	-mkdir -p -m 755 $(bindir)
-	-cp -p $(srcdir)/thraxmakedep $(bindir)
-	-chmod a+x $(bindir)/thraxmakedep
+	-mkdir -p -m 755 $(DESTDIR)$(bindir)
+	-cp -p $(srcdir)/thraxmakedep $(DESTDIR)$(bindir)
+	-chmod a+x $(DESTDIR)$(bindir)/thraxmakedep
 
 uninstall-local:
-	-rm -f $(bindir)/thraxmakedep
+	-rm -f $(DESTDIR)$(bindir)/thraxmakedep
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

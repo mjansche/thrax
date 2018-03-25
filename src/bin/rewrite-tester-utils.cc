@@ -29,7 +29,6 @@ using thrax::FstToStrings;
 using thrax::GetGeneratedSymbolTable;
 using thrax::GrmManagerSpec;
 using thrax::Split;
-using thrax::VisitState;
 using thrax::Split;
 
 DEFINE_string(far, "", "Path to the FAR.");
@@ -106,7 +105,7 @@ void RewriteTesterUtils::Initialize() {
   utf8_symtab_ = NULL;
   if (rules_.empty()) LOG(FATAL) << "--rules must be specified";
   for (size_t i = 0; i < rules_.size(); ++i) {
-    vector<string> rule_bits =  Split(rules_[i], "$");
+    std::vector<string> rule_bits =  Split(rules_[i], "$");
     string pdt_parens_rule = "";
     string mpdt_assignments_rule = "";
     if (rule_bits.size() >= 2) pdt_parens_rule = rule_bits[1];
@@ -149,14 +148,14 @@ void RewriteTesterUtils::Initialize() {
 
   generated_symtab_ = GetGeneratedSymbolTable(&grm_);
   if (FLAGS_input_mode == "byte") {
-    compiler_ = new Compiler(Compiler::BYTE);
+    compiler_ = new Compiler(fst::StringTokenType::BYTE);
   } else if (FLAGS_input_mode == "utf8") {
-    compiler_ = new Compiler(Compiler::UTF8);
+    compiler_ = new Compiler(fst::StringTokenType::UTF8);
   } else {
     input_symtab_ = SymbolTable::ReadText(FLAGS_input_mode);
     CHECK(input_symtab_)
         ;   // NOLINT
-    compiler_ = new Compiler(Compiler::SYMBOL, input_symtab_);
+    compiler_ = new Compiler(fst::StringTokenType::SYMBOL, input_symtab_);
   }
 
   output_symtab_ = NULL;
@@ -197,7 +196,7 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
 
   bool succeeded = true;
   for (size_t i = 0; i < rules_.size(); ++i) {
-    vector<string> rule_bits = Split(rules_[i], "$");
+    std::vector<string> rule_bits = Split(rules_[i], "$");
     string pdt_parens_rule = "";
     string mpdt_assignments_rule = "";
     if (rule_bits.size() >= 2) pdt_parens_rule = rule_bits[1];
@@ -205,7 +204,7 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
     if (grm_.Rewrite(rule_bits[0], input_fst, &output_fst,
                      pdt_parens_rule, mpdt_assignments_rule)) {
       if (FLAGS_show_details && rules_.size() > 1) {
-        vector<std::pair<string, float>> tmp;
+        std::vector<std::pair<string, float>> tmp;
         FstToStrings(output_fst, &tmp, generated_symtab_, type_,
                      output_symtab_, FLAGS_noutput);
         for (const auto& one_result : tmp) {
@@ -224,16 +223,16 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
     }
   }
 
-  vector<std::pair<string, float> > strings;
-  set<string> seen;
+  std::vector<std::pair<string, float> > strings;
+  std::set<string> seen;
   if (succeeded && FstToStrings(output_fst, &strings,
                                 generated_symtab_, type_,
                                 output_symtab_, FLAGS_noutput)) {
     if (strings.size() > 1)
       std::sort(strings.begin(), strings.end(), SortOutput);
-    vector<std::pair<string, float> >::iterator itr = strings.begin();
+    std::vector<std::pair<string, float> >::iterator itr = strings.begin();
     for (; itr != strings.end(); ++itr) {
-      set<string>::iterator sx = seen.find(itr->first);
+      std::set<string>::iterator sx = seen.find(itr->first);
       if (sx != seen.end()) continue;
       if (prepend_output) {
         return_val += "Output string: " + itr->first;
