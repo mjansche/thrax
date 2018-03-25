@@ -4228,6 +4228,7 @@ unknown)
 esac
 
 
+CPPFLAGS="$CPPFLAGS -funsigned-char"
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
 ac_ext=cpp
