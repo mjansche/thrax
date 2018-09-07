@@ -48,10 +48,11 @@
   (regexp-opt
    '("Analyzer" "ArcSort" "AssertEmpty" "AssertEqual" "AssertNull"
      "Category" "CDRewrite" "Closure" "Compose" "Concat" "Connect"
-     "Determinize" "Difference" "Expand" "Feature" "FeatureVector" "Invert" "LoadFst"
-     "LoadFstFromFar" "Minimize" "MPdtCompose" "Optimize" "ParadigmReplace" "PdtCompose"
-     "Project" "Replace" "Reverse" "Rewrite" "RmEpsilon" "RmWeight" "StringFile"
-     "StringFst" "SymbolTable" "Tagger" "Union")
+     "Determinize" "Difference" "Expand" "Feature" "FeatureVector"
+     "Invert" "LoadFst" "LenientlyCompose" "LoadFstFromFar" "Minimize"
+     "MPdtCompose" "Optimize" "ParadigmReplace" "PdtCompose"
+     "Project" "Replace" "Reverse" "Rewrite" "RmEpsilon" "RmWeight"
+     "StringFile" "StringFst" "SymbolTable" "Tagger" "Union")
    'words))
 
 (defvar thrax-syntax "[\]\[=@:|*+\?\"(),;{}-]")

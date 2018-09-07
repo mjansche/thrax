@@ -47,8 +47,8 @@ static bool kHistoryFileInitialized = false;
 
 inline void InitializeHistoryFile() {
   // Create history file if it doesn't exist
-  if (!File::Open(FLAGS_history_file, "r")) {
-    File* fp = File::Open(FLAGS_history_file, "w");
+  if (!Open(FLAGS_history_file, "r")) {
+    File* fp = Open(FLAGS_history_file, "w");
     // Fail silently if we can't open it: just don't record history
     if (fp) fp->Close();
   }

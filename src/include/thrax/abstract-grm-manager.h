@@ -168,7 +168,7 @@ void AbstractGrmManager<Arc>::SortRuleInputLabels() {
       MutableTransducer* sorted_fst = new MutableTransducer(*fst);
       fst::ArcSort(sorted_fst, fst::ILabelCompare<Arc>());
       delete fst;
-      pos->second = static_cast<const Transducer *>(sorted_fst);
+      pos->second = static_cast<const Transducer*>(sorted_fst);
     }
   }
 }
@@ -465,7 +465,7 @@ template <typename Arc>
 bool RuleCascade<Arc>::Rewrite(const Transducer& input,
                                MutableTransducer* output) const {
   MutableTransducer tmp_input(input);
-  CHECK_NOTNULL(grm_);
+  CHECK(grm_ != nullptr);
   for (auto& rule_triple : rule_triples_) {
     if (!grm_->Rewrite(rule_triple.main_rule,
                        tmp_input, output,

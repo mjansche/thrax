@@ -41,10 +41,6 @@ DECLARE_bool(always_export);
 
 using namespace thrax;
 
-
-
-#define CTRL (static_cast<GrmCompilerParserInterface*>(parm))
-
 class FuncOrStmt {
 public:
   CollectionNode *funcs_;
@@ -52,22 +48,13 @@ public:
 };
 
 namespace thrax_rewriter {
-  int yylex(void *, void *parm);
-     void yyerror(void *parm, const char *s);
-
-/* For some reason the brain-dead new version of bison *generates* code
-   that depends on this definition, but does not actually generate
-   a definition for this. I have not figured out how to get around that
-   in a cleaner way. */
-
-void yyerror(void *parm, const char *s) {
-   std::cout << "Parse Failed: " << s << std::endl;
-}
+  int yylex(void *, GrmCompilerParserInterface *parm);
+  int yyerror(GrmCompilerParserInterface *, const char *);
 %}
 
-%define api.pure full
-%parse-param { void *parm }
-%lex-param { void *parm }
+%pure-parser
+
+%param { GrmCompilerParserInterface *parm }
 
 %union {
   int                        int_type;
@@ -146,9 +133,9 @@ grammar:
     { GrammarNode* node = new GrammarNode($1, $2->funcs_, $2->stmts_);
       delete $2;
       $$ = node;
-      CTRL->SetAst(static_cast<Node*>($$)); }
+      parm->SetAst(static_cast<Node*>($$)); }
 | error
-    { CTRL->Error("Generic parsing error.");
+    { parm->Error("Generic parsing error.");
       $$ = NULL; }
 ;
 
@@ -185,19 +172,19 @@ stmt_list:
 stmt:
   rule_stmt
     { StatementNode* node = new StatementNode(StatementNode::RULE_STATEMENTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->Set($1);
       $$ = node; }
 | return_stmt
     { StatementNode* node = new StatementNode(StatementNode::RETURN_STATEMENTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->Set($1);
       $$ = node; }
 | import_request
-    { CTRL->Error("import statements must occur in the first block of the grammar.");
+    { parm->Error("import statements must occur in the first block of the grammar.");
       $$ = NULL; }
 | error tSEMICOLON
-    { CTRL->Error("Invalid statement (or previous statement).");
+    { parm->Error("Invalid statement (or previous statement).");
       $$ = NULL; }
 ;
 
@@ -226,12 +213,12 @@ rule_body:
 
 descriptor:
   tDESCR
-    { const string& name = CTRL->GetLexer()->YYString();
-      int begin_pos = CTRL->GetLexer()->YYBeginPos();
+    { const string& name = parm->GetLexer()->YYString();
+      int begin_pos = parm->GetLexer()->YYBeginPos();
       IdentifierNode* node = new IdentifierNode(name, begin_pos);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       if (!node->IsValid())
-        CTRL->Error(StringPrintf("Illegal identifier: %s", name.c_str()));
+        parm->Error(StringPrintf("Illegal identifier: %s", name.c_str()));
       $$ = node; }
 ;
 
@@ -251,7 +238,7 @@ obj:
 concat_fst:
   repetition_fst concat_fst %prec tCONCAT
     { FstNode* node = new FstNode(FstNode::CONCAT_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       node->AddArgument($2);
       $$ = node; }
@@ -263,7 +250,7 @@ concat_fst:
 union_fst:
   composition_fst tPIPE union_fst
     { FstNode* node = new FstNode(FstNode::UNION_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       node->AddArgument($3);
       $$ = node; }
@@ -275,7 +262,7 @@ union_fst:
 difference_fst:
   difference_fst tMINUS concat_fst
     { FstNode* node = new FstNode(FstNode::DIFFERENCE_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       node->AddArgument($3);
       $$ = node; }
@@ -293,7 +280,7 @@ grouped_obj:
 funccall_obj:
   descriptor funccall_arglist
     { FstNode* node = new FstNode(FstNode::FUNCTION_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       node->AddArgument($2);
       $$ = node; }
@@ -351,18 +338,18 @@ repetition_fst:
       $$ = node; }
 | atomic_obj tLBRACE number tCOMMA number tRBRACE
     { if ($3 > $5)
-        CTRL->Error(StringPrintf("Reversed repetition bounds: %d > %d", $3, $5));
+        parm->Error(StringPrintf("Reversed repetition bounds: %d > %d", $3, $5));
       if ($3 < 0)
-        CTRL->Error(StringPrintf("Start bound must be non-negative: %d", $3));
+        parm->Error(StringPrintf("Start bound must be non-negative: %d", $3));
       if ($5 < 0)
-        CTRL->Error(StringPrintf("End bound must be non-negative: %d", $5));
+        parm->Error(StringPrintf("End bound must be non-negative: %d", $5));
       RepetitionFstNode* node = new RepetitionFstNode(RepetitionFstNode::RANGE);
       node->AddArgument($1);
       node->SetRange($3, $5);
       $$ = node; }
 | atomic_obj tLBRACE number tRBRACE
     { if ($3 < 0)
-        CTRL->Error(StringPrintf("Repetition count should be non-negative: %d", $3));
+        parm->Error(StringPrintf("Repetition count should be non-negative: %d", $3));
       RepetitionFstNode* node = new RepetitionFstNode(RepetitionFstNode::RANGE);
       node->AddArgument($1);
       node->SetRange($3, $3);
@@ -375,7 +362,7 @@ repetition_fst:
 composition_fst:
   composition_fst tAT difference_fst
     { FstNode* node = new FstNode(FstNode::COMPOSITION_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       node->AddArgument($3);
       $$ = node; }
@@ -386,7 +373,7 @@ composition_fst:
 identifier_obj:
   descriptor
     { FstNode* node = new FstNode(FstNode::IDENTIFIER_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       $$ = node; }
 ;
@@ -424,7 +411,7 @@ string_fst:
 fst_with_output:
   union_fst tCOLON union_fst
     { FstNode* node = new FstNode(FstNode::REWRITE_FSTNODE);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       node->AddArgument($1);
       node->AddArgument($3);
       $$ = node; }
@@ -437,7 +424,7 @@ fst_with_weight:
     // TODO: Figure out how to limit outselves to just getting a known FstNode
     // instead of a generic Node.  The current implementation is dangerous.
     { if (!static_cast<FstNode*>($1)->SetWeight($2))
-        CTRL->Error("Rules may have only one weight.");
+        parm->Error("Rules may have only one weight.");
       $$ = $1; }
 | fst_with_output
     { $$ = $1; }
@@ -447,37 +434,37 @@ fst_with_weight:
 // number.  Compare this to how we handle quoted strings and weights...
 number:
   tINTEGER
-    { $$ = atoi(CTRL->GetLexer()->YYString().c_str()); }
+    { $$ = atoi(parm->GetLexer()->YYString().c_str()); }
 ;
 
 quoted_fst_string:
   tDQSTRING
-    { StringNode* node = new StringNode(CTRL->GetLexer()->YYString());
-      node->SetLine(CTRL->GetLexer()->line_number());
+    { StringNode* node = new StringNode(parm->GetLexer()->YYString());
+      node->SetLine(parm->GetLexer()->line_number());
       $$ = node; }
 ;
 
 quoted_string:
   tQSTRING
-    { StringNode* node = new StringNode(CTRL->GetLexer()->YYString());
-      node->SetLine(CTRL->GetLexer()->line_number());
+    { StringNode* node = new StringNode(parm->GetLexer()->YYString());
+      node->SetLine(parm->GetLexer()->line_number());
       $$ = node; }
 ;
 
 weight:
   tANGLE_STRING
-    { StringNode* node = new StringNode(CTRL->GetLexer()->YYString());
-      node->SetLine(CTRL->GetLexer()->line_number());
+    { StringNode* node = new StringNode(parm->GetLexer()->YYString());
+      node->SetLine(parm->GetLexer()->line_number());
       $$ = node; }
 ;
 
 import_request:
   tKEYWORD_IMPORT quoted_string tKEYWORD_AS descriptor tSEMICOLON
     { ImportNode* node = new ImportNode($2, $4);
-      node->SetLine(CTRL->GetLexer()->line_number());
+      node->SetLine(parm->GetLexer()->line_number());
       $$ = node; }
 | error tSEMICOLON
-    { CTRL->Error("Invalid import statement.");
+    { parm->Error("Invalid import statement.");
       $$ = NULL; }
 ;
 
@@ -487,7 +474,7 @@ func_decl:
       node->SetLine(node->GetName()->getline());  // Use the identifier's location.
       $$ = node; }
 | error tRBRACE
-    { CTRL->Error("Invalid function declaration.");
+    { parm->Error("Invalid function declaration.");
       $$ = NULL; }
 ;
 
@@ -519,8 +506,8 @@ func_body:
 // token/type defines.
 
 // yylex() calls Lexer::YYLex()
-int yylex(void *, void *parm) {
-  switch(CTRL->GetLexer()->YYLex()) {
+int yylex(void *, GrmCompilerParserInterface *parm) {
+  switch(parm->GetLexer()->YYLex()) {
     case Lexer::EOS:
       return 0;
     case Lexer::QUOTED_STRING:
@@ -536,12 +523,12 @@ int yylex(void *, void *parm) {
     case Lexer::ANGLE_STRING:
       return tANGLE_STRING;
     case Lexer::CONNECTOR: {
-      string connector = CTRL->GetLexer()->YYString();
+      string connector = parm->GetLexer()->YYString();
       if (connector.length() != 1) {
-        CTRL->Error(StringPrintf("Parse error - unknown connector: %s", connector.c_str()));
+        parm->Error(StringPrintf("Parse error - unknown connector: %s", connector.c_str()));
         return 0;
       }
-      switch (CTRL->GetLexer()->YYString()[0]) {
+      switch (parm->GetLexer()->YYString()[0]) {
         case '$': return tDOLLAR;
         case '(': return tLPAREN;
         case ')': return tRPAREN;
@@ -562,12 +549,12 @@ int yylex(void *, void *parm) {
         case '{': return tLBRACE;
         case '}': return tRBRACE;
         case '|': return tPIPE;
-        default:  CTRL->Error(StringPrintf("Parse error - unknown connector: %s", connector.c_str()));
+        default:  parm->Error(StringPrintf("Parse error - unknown connector: %s", connector.c_str()));
                   return 0;
       }
     }
     case Lexer::KEYWORD: {
-      string keyword = CTRL->GetLexer()->YYString();
+      string keyword = parm->GetLexer()->YYString();
       if (keyword == "export") {
         return tKEYWORD_EXPORT;
       } else if (keyword == "as") {
@@ -583,7 +570,7 @@ int yylex(void *, void *parm) {
       } else if (keyword == "utf8") {
         return tKEYWORD_UTF8;
       } else {
-        CTRL->Error(StringPrintf("Parse error - unknown keyword: %s", keyword.c_str()));
+        parm->Error(StringPrintf("Parse error - unknown keyword: %s", keyword.c_str()));
         return 0;
       }
     }
@@ -591,7 +578,7 @@ int yylex(void *, void *parm) {
   return 0;
 }
 
-int yyerror(const char *s) {
+int yyerror(GrmCompilerParserInterface *, const char *s) {
   std::cout << "Parse Failed: " << s << std::endl;
   return 0;
 }

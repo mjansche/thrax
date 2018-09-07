@@ -54,7 +54,7 @@ namespace thrax {
 class ResourceMap {
  private:
   struct Resource;
-  typedef std::unordered_map<string, Resource*> Map;
+  using Map = std::unordered_map<string, Resource *>;
 
  public:
   ResourceMap() {}
@@ -64,9 +64,9 @@ class ResourceMap {
   }
 
   // Inserts the specified object into the map using the provided name,
-  // replacing any existing object.  Returns true if the object is a new
-  // insertion.  Returns false if the insertion clobbered an existing object.
-  // Generates a default pointer deleter closure.  This method will construct a
+  // replacing any existing object. Returns true if the object is a new
+  // insertion. Returns false if the insertion clobbered an existing object.
+  // Generates a default pointer deleter closure. This method will construct a
   // deleter that frees the object by calling delete (see DeletePointerClosure
   // in base/callback.h).
   template <typename T>
@@ -75,46 +75,40 @@ class ResourceMap {
   }
 
   // Like Insert() above, but the client can optionally provide a custom delete
-  // closure.  If a delete closure is provided, ResourceMap will take ownership
+  // closure. If a delete closure is provided, ResourceMap will take ownership
   // of the closure pointer and call it when the object dies.
   template <typename T>
   bool InsertWithDeleter(const string& name, T* thing, Closure* deleter) {
     fst::MutexLock lock(&mutex_);
-
-    // Search the map for the correct hash position of the new insert.  We'll
-    // use NULL as the value for now since we'll create it from scratch in the
-    // future, after the potential deletion of the pre-existing object.
-    std::pair<Map::iterator, bool> ret =
-        map_.insert(Map::value_type(name, NULL));
-    if (!ret.second)             // Already exists in the map, so we'll get rid
-      delete ret.first->second;  // of the old value.
-
-    // Create a new Resource container to hold the pointer as well as a deleter
+    // Searches the map for the correct hash position of the new insert. We'll
+    // use a nullptr as the value for now since we'll create it from scratch in
+    // the future, after the potential deletion of the pre-existing object.
+    auto ret = map_.emplace(name, nullptr);
+    // Already exists in the map, so we'll get rid of the old value.
+    if (!ret.second) delete ret.first->second;
+    // Creates a new Resource container to hold the pointer as well as a deleter
     // closure, which we create now since we only are sure of the type at this
     // moment.
     ret.first->second =
         new Resource(static_cast<const void*>(thing), typeid(thing), deleter);
-
     return ret.second;
   }
 
-  // Retrieves the object with the provided name and templated type.  Returns
-  // NULL if the object with the provided name isn't found.  Crashes if the
-  // object is found but the types do not match.  The ResourceMap maintains
+  // Retrieves the object with the provided name and templated type. Returns
+  // nullptr if the object with the provided name isn't found. Crashes if the
+  // object is found but the types do not match. The ResourceMap maintains
   // ownership of the pointer, so clients should not delete the pointer
   // received.
   template <typename T>
   T* Get(const string& name) const {
     fst::MutexLock lock(&mutex_);
-    Map::const_iterator it = map_.find(name);
-    if (it == map_.end())
-      return NULL;
+    const auto it = map_.find(name);
+    if (it == map_.end()) return nullptr;
     CheckType<T>(it, name);
-
     // We need to remove the const if the client's original type wasn't const.
     // If it was, however, we'll stick it right back on during the static_cast
     // and return.
-    return static_cast<T*>(const_cast<void*>(it->second->data));
+    return static_cast<T *>(const_cast<void *>(it->second->data));
   }
 
   // Returns true if the map contains an object with the given name
@@ -129,7 +123,7 @@ class ResourceMap {
   template <typename T>
   bool ContainsType(const string& name) const {
     fst::MutexLock lock(&mutex_);
-    Map::const_iterator it = map_.find(name);
+    const auto it = map_.find(name);
     return it != map_.end() && it->second->type == typeid(T*);
   }
 
@@ -137,11 +131,8 @@ class ResourceMap {
   // successfully erased, and false if the object didn't exist.
   bool Erase(const string& name) {
     fst::MutexLock lock(&mutex_);
-
-    Map::iterator it = map_.find(name);
-    if (it == map_.end())
-      return false;
-
+    auto it = map_.find(name);
+    if (it == map_.end()) return false;
     delete it->second;
     map_.erase(it);
     return true;
@@ -150,13 +141,12 @@ class ResourceMap {
   template <typename T>
   T* Release(const string& name) {
     fst::MutexLock lock(&mutex_);
-
-    T* val = NULL;
-    Map::iterator it = map_.find(name);
+    T* val = nullptr;
+    auto it = map_.find(name);
     if (it != map_.end()) {
       CheckType<T>(it, name);
-      val = static_cast<T*>(const_cast<void*>(it->second->data));
-      // Release the data in the Resource, then delete the Resource
+      val = static_cast<T *>(const_cast<void*>(it->second->data));
+      // Releases the data in the Resource, then delete the Resource
       // but not the data it contains
       it->second->Release();
       delete it->second;
@@ -183,10 +173,10 @@ class ResourceMap {
   // stored.  T should be the base (non-pointer) type.
   template <typename T>
   void CheckType(Map::const_iterator it, const string& name) const {
-    const std::type_info& original_type = it->second->type;
-    const std::type_info& requested_type = typeid(T*);
+    const auto &original_type = it->second->type;
+    const auto &requested_type = typeid(T*);
     CHECK(original_type == requested_type)
-        ;
+        ;  // NOLINT
   }
 
   struct Resource {
@@ -202,7 +192,7 @@ class ResourceMap {
 
     void Release() {
       delete destructor;
-      destructor = NULL;
+      destructor = nullptr;
     }
 
     const void* data;
@@ -211,7 +201,6 @@ class ResourceMap {
   };
 
   Map map_;
-
   mutable fst::Mutex mutex_;
 };
 

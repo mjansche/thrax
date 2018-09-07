@@ -1,6 +1,8 @@
 algo_include_headers = thrax/algo/cdrewrite.h thrax/algo/paths.h \
+                       thrax/algo/lenientlycompose.h \
                        thrax/algo/prefix_tree.h thrax/algo/resource-map.h \
-                       thrax/algo/optimize.h thrax/algo/stringprint.h \
+                       thrax/algo/optimize.h thrax/algo/sigma_star.h \
+                       thrax/algo/stringprint.h \
                        thrax/algo/stripcomment.h
 
 compat_include_headers = thrax/compat/compat.h \
@@ -19,7 +21,7 @@ grm_include_headers = thrax/arcsort.h thrax/assert-equal.h \
                       thrax/grm-compiler.h thrax/abstract-grm-manager.h \
                       thrax/grm-manager.h thrax/identifier-counter.h \
                       thrax/identifier-node.h thrax/import-node.h \
-                      thrax/invert.h thrax/lexer.h \
+                      thrax/invert.h thrax/lexer.h thrax/lenientlycompose.h \
                       thrax/make-parens-pair-vector.h thrax/loadfstfromfar.h \
                       thrax/loadfst.h thrax/minimize.h thrax/mpdtcompose.h \
                       thrax/namespace.h thrax/node.h thrax/optimize.h \

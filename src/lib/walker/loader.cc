@@ -27,6 +27,7 @@
 #include <thrax/features.h>
 #include <thrax/function.h>
 #include <thrax/invert.h>
+#include <thrax/lenientlycompose.h>
 #include <thrax/loadfst.h>
 #include <thrax/loadfstfromfar.h>
 #include <thrax/minimize.h>
@@ -68,6 +69,7 @@ void RegisterFunctions() {
   REGISTER_GRM_FUNCTION(Feature);
   REGISTER_GRM_FUNCTION(FeatureVector);
   REGISTER_GRM_FUNCTION(Invert);
+  REGISTER_GRM_FUNCTION(LenientlyCompose);
   REGISTER_GRM_FUNCTION(LoadFst);
   REGISTER_GRM_FUNCTION(LoadFstFromFar);
   REGISTER_GRM_FUNCTION(Minimize);

@@ -4,6 +4,7 @@
 #define THRAX_STRINGFILE_H_
 
 #include <iostream>
+#include <sstream>
 #include <string>
 #include <vector>
 
@@ -97,7 +98,7 @@ class StringFile : public Function<Arc> {
     auto *fp = OpenOrDie(filename, "r");
     PrefixTree pt;
     string line;
-    int linenum = 0;
+    int linenum = 1;
     bool acceptor = true;
     for (InputBuffer ibuf(fp); ibuf.ReadLine(&line); ++linenum) {
       line = fst::StripCommentAndRemoveEscape(line);
@@ -106,7 +107,6 @@ class StringFile : public Function<Arc> {
       if (size == 0) {
         continue;
       }
-      // TODO(rws): Add ability to include weights
       std::vector<Label> ilabels;
       std::vector<Label> olabels;
       if (size == 1) {
@@ -118,6 +118,17 @@ class StringFile : public Function<Arc> {
         ConvertStringToLabels(words[1], &olabels, omode, osymbols);
         pt.Add(ilabels.begin(), ilabels.end(),
                olabels.begin(), olabels.end());
+        acceptor = false;
+      } else if (size == 3) {
+        ConvertStringToLabels(words[0], &ilabels, imode, isymbols);
+        ConvertStringToLabels(words[1], &olabels, omode, osymbols);
+        std::istringstream strm(words[2]);
+        typename Arc::Weight weight;
+        CHECK(strm >> weight) 
+        ;  // NOLINT
+        pt.Add(ilabels.begin(), ilabels.end(),
+              olabels.begin(), olabels.end(),
+              weight);
         acceptor = false;
       } else {
         std::cout << "StringFile: Possible ill-formed line " << linenum

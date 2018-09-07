@@ -1,5 +1,5 @@
-#ifndef FST_UTIL_OPTIMIZE_OPTIMIZE_H_
-#define FST_UTIL_OPTIMIZE_OPTIMIZE_H_
+#ifndef FST_UTIL_OPERATORS_OPTIMIZE_H_
+#define FST_UTIL_OPERATORS_OPTIMIZE_H_
 
 #include <type_traits>
 
@@ -194,10 +194,9 @@ void OptimizeDifferenceRhs(MutableFst<Arc> *fst, bool compute_props = false) {
   }
   // Minimally, RHS must be input label-sorted; the LHS does not need
   // arc-sorting when the RHS is deterministic (as it now should be).
-  ILabelCompare<Arc> icomp;
-  ArcSort(fst, icomp);
+  ArcSort(fst, ILabelCompare<Arc>());
 }
 
 }  // namespace fst
 
-#endif  // FST_UTIL_OPTIMIZE_OPTIMIZE_H_
+#endif  // FST_UTIL_OPERATORS_OPTIMIZE_H_

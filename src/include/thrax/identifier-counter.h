@@ -19,12 +19,12 @@
 #ifndef THRAX_IDENTIFIER_COUNTER_H_
 #define THRAX_IDENTIFIER_COUNTER_H_
 
-#include <unordered_map>
 #include <string>
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
 #include <thrax/walker.h>
+#include <unordered_map>
 
 namespace thrax {
 

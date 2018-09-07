@@ -15,7 +15,6 @@
 
 #include <thrax/identifier-counter.h>
 
-#include <unordered_map>
 #include <string>
 
 #include <thrax/collection-node.h>
@@ -25,6 +24,7 @@
 #include <thrax/rule-node.h>
 #include <thrax/statement-node.h>
 #include <thrax/compat/stlfunctions.h>
+#include <unordered_map>
 
 namespace thrax {
 
@@ -87,7 +87,8 @@ int AstIdentifierCounter::GetCount(const string& identifier) {
 }
 
 bool AstIdentifierCounter::Decrement(const string& identifier) {
-  std::unordered_map<string, int>::iterator where = references_.find(identifier);
+  std::unordered_map<string, int>::iterator where =
+      references_.find(identifier);
   CHECK(where != references_.end())
       ;
   if (where->second < 0)

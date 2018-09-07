@@ -46,7 +46,7 @@ class PathIterator {
   explicit PathIterator(const Fst<Arc> &fst, bool check_acyclic = true);
 
   // Whether initialization was successful. Check this before accessing the
-  // iterator if it was constructed with check=true.
+  // iterator if it was constructed with check_acyclic = true.
   bool Error() const { return error_; }
 
   const std::vector<Label> &ILabels() const { return path_ilabels_; }
@@ -215,17 +215,18 @@ class StringPaths {
   // lead to infinite loops and thus check_acyclic should only be false when the
   // caller can ensure finite iteration (e.g., knowing the FST is acyclic or
   // limiting the number of iterated paths).
-  StringPaths(const Fst<Arc> &fst, StringTokenType itype, StringTokenType otype,
-              const SymbolTable *isyms = nullptr,
-              const SymbolTable *osyms = nullptr, bool rm_epsilon = true,
-              bool check_acyclic = true);
+  explicit StringPaths(const Fst<Arc> &fst, StringTokenType itype = BYTE,
+                       StringTokenType otype = BYTE,
+                       const SymbolTable *isyms = nullptr,
+                       const SymbolTable *osyms = nullptr,
+                       bool rm_epsilon = true, bool check_acyclic = true);
 
-  // Same as above, but applies the same string token type and symbol table
-  // to both tapes.
-  StringPaths(const Fst<Arc> &fst, StringTokenType type,
-              const SymbolTable *syms = nullptr, bool rm_epsilon = true,
-              bool check_acyclic = true)
-      : StringPaths(fst, type, type, syms, syms, rm_epsilon, check_acyclic) {}
+  // The same, but sets input and output token types/symbol tables to the same
+  // argument.
+  explicit StringPaths(const Fst<Arc> &fst, StringTokenType ttype,
+                       const SymbolTable *syms = nullptr,
+                       bool rm_epsilon = true, bool check_acyclic = true)
+      : StringPaths(fst, ttype, ttype, syms, syms, rm_epsilon, check_acyclic) {}
 
   bool Error() const { return error_ || iter_.Error(); }
 
@@ -277,11 +278,9 @@ class StringPaths {
 // limiting the number of iterated paths).
 template <class Arc>
 StringPaths<Arc>::StringPaths(const Fst<Arc> &fst, StringTokenType itype,
-                              StringTokenType otype,
-                              const SymbolTable *isyms /* = nullptr */,
-                              const SymbolTable *osyms /* = nullptr */,
-                              bool rm_epsilon /* = true */,
-                              bool check_acyclic /* = true */)
+                              StringTokenType otype, const SymbolTable *isyms,
+                              const SymbolTable *osyms, bool rm_epsilon,
+                              bool check_acyclic)
     : iter_(fst, check_acyclic),
       itype_(itype),
       otype_(otype),
@@ -320,7 +319,7 @@ template <class Arc>
 void StringPaths<Arc>::IString(string *str) {
   std::vector<Label> labels;
   ILabels(&labels);
-  if (!internal::LabelsToString(labels, itype_, str, isyms_)) error_ = true;
+  if (!internal::LabelsToString(labels, str, itype_, isyms_)) error_ = true;
 }
 
 template <class Arc>
@@ -341,7 +340,7 @@ template <class Arc>
 void StringPaths<Arc>::OString(string *str) {
   std::vector<Label> labels;
   OLabels(&labels);
-  if (!internal::LabelsToString(labels, otype_, str, osyms_)) error_ = true;
+  if (!internal::LabelsToString(labels, str, otype_, osyms_)) error_ = true;
 }
 
 }  // namespace fst

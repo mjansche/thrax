@@ -15,4 +15,4 @@ libthrax_la_SOURCES = ast/collection-node.cc ast/grammar-node.cc \
                       walker/identifier-counter.cc walker/loader.cc \
                       walker/namespace.cc walker/printer.cc \
                       walker/stringfst.cc walker/symbols.cc walker/walker.cc
-libthrax_la_LDFLAGS = -version-info 125:0:0
+libthrax_la_LDFLAGS = -version-info 126:0:0

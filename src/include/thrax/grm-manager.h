@@ -65,8 +65,7 @@ bool GrmManagerSpec<Arc>::LoadArchive(const string& filename) {
 
 template <typename Arc>
 void GrmManagerSpec<Arc>::ExportFar(const string &filename) const {
-  const string dir(JoinPath(
-      FLAGS_outdir, StripBasename(filename)));
+  const string dir(JoinPath(FLAGS_outdir, StripBasename(filename)));
   VLOG(1) << "Creating output directory: " << dir;
   if (!RecursivelyCreateDir(dir))
     LOG(FATAL) << "Unable to create output directory: " << dir;

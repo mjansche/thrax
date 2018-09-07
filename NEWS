@@ -78,3 +78,9 @@ Thrax - Release 1.2.5
 
 * Better use of finalization in the implementation of built-in methods.
 * Cleanup to string parsing.
+
+Thrax - Release 1.2.6
+
+* Adds an optional third column to stringfiles to represent weights.
+* Adds implementation of lenient composition.
+* Fixes some header issues that have popped up in recent versions of Debian. 

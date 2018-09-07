@@ -67,8 +67,9 @@ bool PrintSymbol(Label label, const SymbolTable &syms, std::ostream &ostrm) {
 // but takes a lower-level input (a vector of labels) and avoids some redundant
 // checks.
 template <class Label>
-bool LabelsToString(const std::vector<Label> &labels, StringTokenType ttype,
-                    string *result, const SymbolTable *syms = nullptr) {
+bool LabelsToString(const std::vector<Label> &labels, string *result,
+                    StringTokenType ttype = BYTE,
+                    const SymbolTable *syms = nullptr) {
   result->clear();
   switch (ttype) {
     case BYTE: {
@@ -113,7 +114,7 @@ void RemoveEpsilonLabels(std::vector<Label> *labels) {
 }  // namespace internal
 
 template <class Arc>
-bool PrintString(const Fst<Arc> &fst, StringTokenType ttype, string *str,
+bool PrintString(const Fst<Arc> &fst, string *str, StringTokenType ttype = BYTE,
                  const SymbolTable *syms = nullptr, bool rm_epsilon = true) {
   using Label = typename Arc::Label;
   // Collects labels.
@@ -122,7 +123,7 @@ bool PrintString(const Fst<Arc> &fst, StringTokenType ttype, string *str,
   // Optionally removes epsilon labels.
   if (rm_epsilon) internal::RemoveEpsilonLabels(&labels);
   // Writes labels or symbols to string.
-  if (!internal::LabelsToString(labels, ttype, str, syms)) return false;
+  if (!internal::LabelsToString(labels, str, ttype, syms)) return false;
   return true;
 }
 

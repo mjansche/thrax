@@ -459,7 +459,7 @@ class FeatureVector : public Function<Arc> {
         return nullptr;
       }
       int64 label = generated_symbols->Find(featval);
-      if (label == fst::SymbolTable::kNoSymbol) {
+      if (label == fst::kNoSymbol) {
         std::cout << "Feature/value pair " << featval << " is not defined."
                   << std::endl;
         delete generated_symbols;
