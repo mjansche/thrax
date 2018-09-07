@@ -63,3 +63,14 @@ Thrax - Release 1.2.3
 
 * Properly adds AssertEmpty, AssertEqual and RmWeight functions.
 * Adds fix suggested by Damir Cavar to allow for compilation under Cygwin.
+
+Thrax - Release 1.2.4
+
+* Makes "#" a comment character for StringFiles: anything from "#" to the end of
+  the line is now a comment. If you want a real "#", escape it with "\".
+* Adds a RuleCascade to the library to make it easier to deal with the common
+  construct of a cascade of rules. (Only relevant if you develop code using the
+  Thrax libraries.)
+* Better error reporting for "cannot parse character" error.
+* Adds ":" as a bash-friendly alternative to "$" when specifying a
+  (M)PDT/parens(/assignments) combination.

@@ -37,12 +37,16 @@ using std::vector;
 DEFINE_string(field_separator, " ",
               "Field separator for strings of symbols from a symbol table.");
 
-namespace thrax {
+using fst::StdArc;
+using fst::StdVectorFst;
+using fst::SymbolTable;
 
+namespace thrax {
 namespace {
+
 inline bool AppendLabel(StdArc::Label label, TokenType type,
-                        const SymbolTable* generated_symtab,
-                        SymbolTable* symtab, string* path) {
+                        const SymbolTable *generated_symtab,
+                        SymbolTable *symtab, string *path) {
   if (label != 0) {
     // Check first to see if this label is in the generated symbol set. Note
     // that this should not conflict with a user-provided symbol table since
@@ -57,17 +61,15 @@ inline bool AppendLabel(StdArc::Label label, TokenType type,
         LOG(ERROR) << "Missing symbol in symbol table for id: " << label;
         return false;
       }
-      // For non-byte or utf8 symbols, one overwhelmingly wants these to be
+      // For non-byte, non-UTF8 symbols, one overwhelmingly wants these to be
       // space-separated.
-      if (*path != "") {
-        *path += FLAGS_field_separator;
-      }
+      if (!path->empty()) *path += FLAGS_field_separator;
       *path += sym;
     } else if (type == BYTE) {
       path->push_back(label);
     } else if (type == UTF8) {
       string utf8_string;
-      std::vector<int> labels;
+      std::vector<StdArc::Label> labels;
       labels.push_back(label);
       if (!fst::LabelsToUTF8String(labels, &utf8_string)) {
         LOG(ERROR) << "LabelsToUTF8String: Bad code point: " << label;
@@ -78,25 +80,30 @@ inline bool AppendLabel(StdArc::Label label, TokenType type,
   }
   return true;
 }
+
 }  // namespace
 
-bool FstToStrings(const Transducer& fst,
-                  std::vector<std::pair<string, float> >* strings,
-                  const SymbolTable* generated_symtab,
-                  TokenType type,
-                  SymbolTable* symtab,
-                  size_t n) {
-  Transducer temp;
-  fst::ShortestPath(fst, &temp, n);
-  fst::Project(&temp, fst::PROJECT_OUTPUT);
-  fst::RmEpsilon(&temp);
-  if (temp.Start() == fst::kNoStateId) {
-    return false;
+bool FstToStrings(const StdVectorFst &fst,
+                  std::vector<std::pair<string, float>> *strings,
+                  const SymbolTable *generated_symtab, TokenType type,
+                  SymbolTable *symtab, size_t n) {
+  StdVectorFst shortest_path;
+  if (n == 1) {
+    fst::ShortestPath(fst, &shortest_path, n);
+  } else {
+    // The uniqueness feature of ShortestPath requires us to have an acceptor,
+    // so we project and remove epsilon arcs.
+    StdVectorFst temp(fst);
+    fst::Project(&temp, fst::PROJECT_OUTPUT);
+    fst::RmEpsilon(&temp);
+    fst::ShortestPath(temp, &shortest_path, n, /* unique */ true);
   }
-  for (fst::PathIterator<StdArc> iter(temp, /*check_acyclic*/ false);
+  if (shortest_path.Start() == fst::kNoStateId) return false;
+  for (fst::PathIterator<StdArc> iter(shortest_path,
+                                          /* check_acyclic */ false);
        !iter.Done(); iter.Next()) {
     string path;
-    for (auto label : iter.OValue()) {
+    for (const auto label : iter.OLabels()) {
       if (!AppendLabel(label, type, generated_symtab, symtab, &path)) {
         return false;
       }
@@ -106,14 +113,14 @@ bool FstToStrings(const Transducer& fst,
   return true;
 }
 
-const fst::SymbolTable*
-GetGeneratedSymbolTable(GrmManagerSpec<StdArc>* grm) {
-  const fst::Fst<StdArc>* symbolfst = grm->GetFst("*StringFstSymbolTable");
+const fst::SymbolTable *GetGeneratedSymbolTable(
+    GrmManagerSpec<StdArc> *grm) {
+  const auto *symbolfst = grm->GetFst("*StringFstSymbolTable");
   if (symbolfst) {
-    Transducer mutable_symbolfst(*symbolfst);
+    StdVectorFst mutable_symbolfst(*symbolfst);
     return mutable_symbolfst.InputSymbols()->Copy();
   }
-  return NULL;
+  return nullptr;
 }
 
 }  // namespace thrax

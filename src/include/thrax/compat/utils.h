@@ -19,30 +19,40 @@
 #ifndef THRAX_COMPAT_STRUTILS_H_
 #define THRAX_COMPAT_STRUTILS_H_
 
-#include <stdarg.h>
-#include <stdio.h>
+#include <fcntl.h>
 #include <sys/stat.h>
 #include <sys/types.h>
-#include <fcntl.h>
+#include <unistd.h>
+
+#include <cstdarg>
+#include <cstdio>
+
 #include <fstream>
+#include <memory>
 #include <string>
 #include <vector>
+
+#include <fst/compat.h>
 
 namespace thrax {
 
 using std::string;
-using std::fstream;
-using std::ios;
-using std::vector;
 
-struct StringOrInt {
-  StringOrInt(const string& s) : str_(s) {}
-  StringOrInt(const char* s) : str_(string(s)) {}
-  StringOrInt(int i) {
+class StringOrInt {
+ public:
+  StringOrInt(const string &s) : str_(s) {}  // NOLINT
+
+  StringOrInt(const char *s) : str_(string(s)) {}  // NOLINT
+
+  StringOrInt(int i) {  // NOLINT
     char buf[1024];
     sprintf(buf, "%d", i);
     str_ = string(buf);
   }
+
+  const string &Get() const { return str_; }
+
+ private:
   string str_;
 };
 
@@ -63,47 +73,46 @@ extern string StrCat(const StringOrInt &s1,
                      const StringOrInt &s4,
                      const StringOrInt &s5);
 
-extern string StringPrintf(const char* format, ...);
+extern string StringPrintf(const char *format, ...);
 
-extern void SplitStringAllowEmpty(const string& full, const char* delim,
-                                  vector<string>* result);
+extern void SplitStringAllowEmpty(const string &full, const char *delim,
+                                  std::vector<string> *result);
 
-extern vector<string> Split(const string& full, const char* delim);
+extern std::vector<string> Split(const string &full, const char *delim);
 
-extern string JoinPath(const string& dirname, const string& basename);
+extern string JoinPath(const string &dirname, const string &basename);
 
-extern const char* Suffix(const char* filename);
+extern const char *Suffix(const char *filename);
 
-extern const string Suffix(const string& filename);
+extern const string Suffix(const string &filename);
 
-extern string StripBasename(const char* filename);
+extern string StripBasename(const char *filename);
 
-extern string StripBasename(const string& filename);
+extern string StripBasename(const string &filename);
 
-extern bool Readable(const string& f);
+extern bool Readable(const string &filename);
 
-extern void ReadFileToStringOrDie(const string& file, string* store);
+extern void ReadFileToStringOrDie(const string &filename, string *store);
 
-extern bool RecursivelyCreateDir(const string& path);
+extern bool RecursivelyCreateDir(const string &path);
 
 class File {
  public:
-  File() : stream_(NULL) {}
-  explicit File(fstream* stream) : stream_(stream) {}
+  File() {}
 
-  ~File() { delete stream_; }
-  void SetStream(fstream* stream) {
-    stream_ = stream;
-  }
-  fstream* stream() { return stream_; }
+  explicit File(std::fstream *stream) : stream_(stream) {}
+
+  void SetStream(std::fstream *stream) { stream_.reset(stream); }
+
+  std::fstream *Stream() { return stream_.get(); }
 
   void Close() {
     stream_->close();
-    delete stream_;
+    stream_.reset();
   }
 
  private:
-  fstream* stream_;
+  std::unique_ptr<std::fstream> stream_;
 };
 
 // 2^14 --- should be enough for 1 line for the intended use
@@ -112,14 +121,13 @@ class File {
 
 class InputBuffer {
  public:
-  explicit InputBuffer(File* fp) : fp_(fp) { }
-  ~InputBuffer() { delete fp_; }
-  bool ReadLine(string* line) {
+  explicit InputBuffer(File *fp) : fp_(fp) {}
+
+  bool ReadLine(string *line) {
     line->clear();
-    fp_->stream()->getline(buf_, MAXLINE);
-    if (!fp_->stream()->gcount()) {
-      delete fp_;
-      fp_ = NULL;
+    fp_->Stream()->getline(buf_, MAXLINE);
+    if (!fp_->Stream()->gcount()) {
+      fp_.reset();
       return false;
     }
     line->append(buf_);
@@ -127,13 +135,13 @@ class InputBuffer {
   }
 
  private:
-  File* fp_;
+  std::unique_ptr<File> fp_;
   char buf_[MAXLINE];
 };
 
-File* Open(const string& filename, const string& mode);
+File *Open(const string &filename, const string &mode);
 
-File* OpenOrDie(const string& filename, const string& mode);
+File *OpenOrDie(const string &filename, const string &mode);
 
 }  // namespace thrax
 

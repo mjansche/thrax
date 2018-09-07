@@ -30,12 +30,6 @@ using std::vector;
 #include <fst/vector-fst.h>
 #include <thrax/grm-manager.h>
 
-using fst::StdArc;
-using fst::SymbolTable;
-using fst::VectorFst;
-using thrax::GrmManagerSpec;
-
-typedef VectorFst<StdArc> Transducer;
 enum TokenType { SYMBOL = 1, BYTE = 2, UTF8 = 3 };
 
 namespace thrax {
@@ -44,20 +38,18 @@ namespace thrax {
 // corresponding to each path. The mapping of labels to strings is controlled by
 // the type and the symtab. Elements that are in the generated label set from
 // the grammar are output as "[name]" where "name" is the name of the generated
-// label.
+// label. Paths are sorted in ascending order of weights.
 
-bool FstToStrings(const Transducer& fst,
-                  std::vector<std::pair<string, float> >* strings,
-                  const SymbolTable* generated_symtab,
+bool FstToStrings(const fst::VectorFst<fst::StdArc> &fst,
+                  std::vector<std::pair<string, float>> *strings,
+                  const fst::SymbolTable *generated_symtab,
                   TokenType type = BYTE,
-                  SymbolTable* symtab = NULL,
-                  size_t n = 1);
+                  fst::SymbolTable *symtab = nullptr, size_t n = 1);
 
 // Find the generated labels from the grammar.
 
-const fst::SymbolTable*
-GetGeneratedSymbolTable(GrmManagerSpec<StdArc>* grm);
-
+const fst::SymbolTable *GetGeneratedSymbolTable(
+    GrmManagerSpec<fst::StdArc> *grm);
 
 }  // namespace thrax
 

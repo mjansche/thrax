@@ -1,8 +1,11 @@
-AC_INIT([Thrax], [1.2.3], [help@opengrm.org])
+AC_INIT([Thrax], [1.2.4], [help@opengrm.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
 AM_PROG_AR
 
-CPPFLAGS="$CPPFLAGS -funsigned-char"
+# Thrax does not throw exceptions, so we do not generate exception handling
+# code. However, users are free to re-enable exception handling.
+# Thrax assumes `char` is `unsigned char`; -fsigned-char is likely unsafe.
+CPPFLAGS="$CPPFLAGS -fno-exceptions -funsigned-char"
 CXXFLAGS="$CXXFLAGS -std=c++11"
 
 AC_PROG_CXX

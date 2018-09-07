@@ -21,7 +21,7 @@ using thrax::Open;
 #include <readline/readline.h>
 #endif  // HAVE_READLINE
 
-using fst::StdArc;
+using fst::StdVectorFst;
 using fst::StringCompiler;
 using fst::SymbolTable;
 using fst::VectorFst;
@@ -93,11 +93,6 @@ RewriteTesterUtils::~RewriteTesterUtils() {
   delete utf8_symtab_;
 }
 
-bool RewriteTesterUtils::SortOutput(std::pair<string, float> i,
-                                    std::pair<string, float> j) {
-  return(i.second < j.second);
-}
-
 void RewriteTesterUtils::Initialize() {
   CHECK(grm_.LoadArchive(FLAGS_far));
   rules_ = Split(FLAGS_rules, ",");
@@ -105,17 +100,13 @@ void RewriteTesterUtils::Initialize() {
   utf8_symtab_ = NULL;
   if (rules_.empty()) LOG(FATAL) << "--rules must be specified";
   for (size_t i = 0; i < rules_.size(); ++i) {
-    std::vector<string> rule_bits =  Split(rules_[i], "$");
-    string pdt_parens_rule = "";
-    string mpdt_assignments_rule = "";
-    if (rule_bits.size() >= 2) pdt_parens_rule = rule_bits[1];
-    if (rule_bits.size() == 3) mpdt_assignments_rule = rule_bits[2];
-    const fst::Fst<StdArc>* fst = grm_.GetFst(rule_bits[0]);
+    thrax::RuleTriple triple(rules_[i]);
+    const auto *fst = grm_.GetFst(triple.main_rule);
     if (!fst) {
       LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
-                 << rule_bits[0];
+                 << triple.main_rule;
     }
-    Transducer vfst(*fst);
+    StdVectorFst vfst(*fst);
     // If the input transducers in the FAR have symbol tables then we need to
     // add the appropriate symbol table(s) to the input strings, according to
     // the parse mode.
@@ -130,18 +121,18 @@ void RewriteTesterUtils::Initialize() {
         utf8_symtab_ = vfst.InputSymbols()->Copy();
       }
     }
-    if (!pdt_parens_rule.empty()) {
-      fst = grm_.GetFst(pdt_parens_rule);
+    if (!triple.pdt_parens_rule.empty()) {
+      fst = grm_.GetFst(triple.pdt_parens_rule);
       if (!fst) {
         LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
-                   << pdt_parens_rule;
+                   << triple.pdt_parens_rule;
       }
     }
-    if (!mpdt_assignments_rule.empty()) {
-      fst = grm_.GetFst(mpdt_assignments_rule);
+    if (!triple.mpdt_assignments_rule.empty()) {
+      fst = grm_.GetFst(triple.mpdt_assignments_rule);
       if (!fst) {
         LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
-                   << mpdt_assignments_rule;
+                   << triple.mpdt_assignments_rule;
       }
     }
   }
@@ -171,13 +162,9 @@ void RewriteTesterUtils::Initialize() {
   }
 }
 
-const string RewriteTesterUtils::ProcessInput(const string& input) {
-  return ProcessInput(input, true);
-}
-
 const string RewriteTesterUtils::ProcessInput(const string& input,
                                               bool prepend_output) {
-  Transducer input_fst, output_fst;
+  StdVectorFst input_fst, output_fst;
   if (!compiler_->operator()(input, &input_fst)) {
     return "Unable to parse input string.";
   }
@@ -196,13 +183,9 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
 
   bool succeeded = true;
   for (size_t i = 0; i < rules_.size(); ++i) {
-    std::vector<string> rule_bits = Split(rules_[i], "$");
-    string pdt_parens_rule = "";
-    string mpdt_assignments_rule = "";
-    if (rule_bits.size() >= 2) pdt_parens_rule = rule_bits[1];
-    if (rule_bits.size() == 3) mpdt_assignments_rule = rule_bits[2];
-    if (grm_.Rewrite(rule_bits[0], input_fst, &output_fst,
-                     pdt_parens_rule, mpdt_assignments_rule)) {
+    thrax::RuleTriple triple(rules_[i]);
+    if (grm_.Rewrite(triple.main_rule, input_fst, &output_fst,
+                     triple.pdt_parens_rule, triple.mpdt_assignments_rule)) {
       if (FLAGS_show_details && rules_.size() > 1) {
         std::vector<std::pair<string, float>> tmp;
         FstToStrings(output_fst, &tmp, generated_symtab_, type_,
@@ -210,7 +193,7 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
         for (const auto& one_result : tmp) {
           return_val +=
               "output of rule[" +
-              rule_bits[0] +
+              triple.main_rule +
               "] is: " +
               one_result.first +
               "\n";
@@ -228,8 +211,6 @@ const string RewriteTesterUtils::ProcessInput(const string& input,
   if (succeeded && FstToStrings(output_fst, &strings,
                                 generated_symtab_, type_,
                                 output_symtab_, FLAGS_noutput)) {
-    if (strings.size() > 1)
-      std::sort(strings.begin(), strings.end(), SortOutput);
     std::vector<std::pair<string, float> >::iterator itr = strings.begin();
     for (; itr != strings.end(); ++itr) {
       std::set<string>::iterator sx = seen.find(itr->first);

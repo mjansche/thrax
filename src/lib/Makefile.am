@@ -10,8 +10,8 @@ libthrax_la_SOURCES = ast/collection-node.cc ast/grammar-node.cc ast/fst-node.cc
                       flags/flags.cc \
                       main/grm-compiler.cc main/lexer.cc main/parser.yy main/grm-manager.cc \
 		      main/compiler-stdarc.cc main/compiler-log.cc main/compiler-log64.cc \
-                      util/utils.cc \
+                      util/utils.cc util/gtl.cc \
                       walker/evaluator-specializations.cc walker/identifier-counter.cc \
 		      walker/loader.cc walker/namespace.cc walker/printer.cc \
                       walker/stringfst.cc walker/symbols.cc walker/walker.cc
-libthrax_la_LDFLAGS = -version-info 0:0:0
+libthrax_la_LDFLAGS = -version-info 124:0:0

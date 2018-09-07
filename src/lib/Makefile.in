@@ -131,7 +131,7 @@ am_libthrax_la_OBJECTS = ast/collection-node.lo ast/grammar-node.lo \
 	flags/flags.lo main/grm-compiler.lo main/lexer.lo \
 	main/parser.lo main/grm-manager.lo main/compiler-stdarc.lo \
 	main/compiler-log.lo main/compiler-log64.lo util/utils.lo \
-	walker/evaluator-specializations.lo \
+	util/gtl.lo walker/evaluator-specializations.lo \
 	walker/identifier-counter.lo walker/loader.lo \
 	walker/namespace.lo walker/printer.lo walker/stringfst.lo \
 	walker/symbols.lo walker/walker.lo
@@ -363,12 +363,12 @@ libthrax_la_SOURCES = ast/collection-node.cc ast/grammar-node.cc ast/fst-node.cc
                       flags/flags.cc \
                       main/grm-compiler.cc main/lexer.cc main/parser.yy main/grm-manager.cc \
 		      main/compiler-stdarc.cc main/compiler-log.cc main/compiler-log64.cc \
-                      util/utils.cc \
+                      util/utils.cc util/gtl.cc \
                       walker/evaluator-specializations.cc walker/identifier-counter.cc \
 		      walker/loader.cc walker/namespace.cc walker/printer.cc \
                       walker/stringfst.cc walker/symbols.cc walker/walker.cc
 
-libthrax_la_LDFLAGS = -version-info 0:0:0
+libthrax_la_LDFLAGS = -version-info 124:0:0
 all: all-am
 
 .SUFFIXES:
@@ -491,6 +491,7 @@ util/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) util/$(DEPDIR)
 	@: > util/$(DEPDIR)/$(am__dirstamp)
 util/utils.lo: util/$(am__dirstamp) util/$(DEPDIR)/$(am__dirstamp)
+util/gtl.lo: util/$(am__dirstamp) util/$(DEPDIR)/$(am__dirstamp)
 walker/$(am__dirstamp):
 	@$(MKDIR_P) walker
 	@: > walker/$(am__dirstamp)
@@ -552,6 +553,7 @@ distclean-compile:
 @AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/grm-manager.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/lexer.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@main/$(DEPDIR)/parser.Plo@am__quote@
+@AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/gtl.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@util/$(DEPDIR)/utils.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@walker/$(DEPDIR)/evaluator-specializations.Plo@am__quote@
 @AMDEP_TRUE@@am__include@ @am__quote@walker/$(DEPDIR)/identifier-counter.Plo@am__quote@

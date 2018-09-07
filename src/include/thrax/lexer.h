@@ -33,7 +33,6 @@
 // Removed by Rosie-managed cl/136839945/  This was commented out to facilitate
 // changing the export scripts for the open source version of this code.
 // TODO(rws) Actually remove this when the scripts are updated.
-// DECLARE_int32(v);
 
 namespace thrax {
 

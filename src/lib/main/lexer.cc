@@ -135,8 +135,14 @@ Lexer::TokenClass Lexer::YYLex() {
       }
       found_token = true;
     } else {
+      string filename = current_grammar_path() + ":";
+      if (filename == ":") {
+        filename = "line ";
+      }
       LOG(FATAL) << "Cannot parse character " << static_cast<char>(c) << " ("
-                 << c << ")\n";
+                 << c << ") at " << filename << line_number()
+                 << " at absolute character position " << GetPos() << " near: '"
+                 << GetCurrentContext() << "'";
     }
   }
   curr_token_.begin_pos = begin_pos;

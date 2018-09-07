@@ -27,6 +27,7 @@ using std::vector;
 #include <thrax/compat/utils.h>
 #include <fst/fstlib.h>
 #include <fst/string.h>
+#include <thrax/algo/stripcomment.h>
 #include <thrax/fst-node.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
@@ -119,6 +120,7 @@ class StringFile : public Function<Arc> {
     bool acceptor = true;
     for (InputBuffer ibuf(fp); ibuf.ReadLine(&line);
          /* ReadLine() automatically increments */) {
+      line = fst::StripCommentAndRemoveEscape(line);
       std::vector<string> words =
           Split(line, "\t");
       size_t size = words.size();
@@ -175,8 +177,8 @@ class StringFile : public Function<Arc> {
                              const fst::SymbolTable* syms) const {
     labels->clear();
     if (token_type == fst::StringTokenType::BYTE) {
-      for (size_t i = 0; i < str.size(); ++i)
-        labels->push_back(static_cast<unsigned char>(str[i]));
+      labels->reserve(str.size());
+      for (char ch : str) labels->push_back(ch);
     } else if (token_type == fst::StringTokenType::UTF8) {
       return fst::UTF8StringToLabels(str, labels);
     } else {

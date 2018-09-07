@@ -1,4 +1,4 @@
-Thrax - Release 1.2.3
+Thrax - Release 1.2.4
 
 Thrax is a toolkit for compiling grammars based on regular expressions and
 context-dependent rewrite rules into weighted finite-state transducers

@@ -204,8 +204,8 @@ class AstEvaluator : public AstWalker {
     // Get (and check) the path of the actual source and far.
     const string& path = JoinPath(FLAGS_indir, node->GetPath()->Get());
     if (Suffix(path) != "grm") {
-      Error(*node,
-            StrCat("Extension for included files should be .grm: ", path));
+      Error(*node, StrCat("Extension for included files should be .grm: ",
+                                path));
       return;
     }
 
@@ -229,7 +229,8 @@ class AstEvaluator : public AstWalker {
     GrmCompilerSpec<Arc>* grammar = new GrmCompilerSpec<Arc>();
     if (!grammar->ParseFile(path) ||
         !grammar->EvaluateAstWithEnvironment(env_, false)) {
-      Error(*node, StrCat("Errors while importing grm source file: ", path));
+      Error(*node,
+            StrCat("Errors while importing grm source file: ", path));
       env_ = prev_env_;
       return;
     }
@@ -323,7 +324,7 @@ class AstEvaluator : public AstWalker {
     if (identifier->HasNamespaces()) {
       Error(*identifier,
             StrCat("Cannot assign to an identifier within a namespace: ",
-                   identifier->Get()));
+                         identifier->Get()));
       return;
     }
 
@@ -333,7 +334,8 @@ class AstEvaluator : public AstWalker {
 
     // Insert the new variable, dying if it clobbers a pre-existing object.
     if (!env_->InsertLocal(name, thing)) {
-      Error(*identifier, StrCat("Cannot clobber existing variable: ", name));
+      Error(*identifier,
+            StrCat("Cannot clobber existing variable: ", name));
       return;
     }
     if (node->ShouldExport()) {
@@ -342,7 +344,8 @@ class AstEvaluator : public AstWalker {
       } else if (!FLAGS_always_export) {
         Error(*identifier,
               StrCat("Variables may only be exported from the top-level "
-                     "grammar: ", name));
+                           "grammar: ",
+                           name));
         return;
       }
     }
@@ -409,8 +412,8 @@ class AstEvaluator : public AstWalker {
       }
       VLOG(1) << "Expanding FST: " << name;
       if (!env_->Get<DataType>(**fst_i)->is<Transducer*>()) {
-        Error(**fst_i,
-              StrCat("Cannot export non-FST variable: ", (*fst_i)->Get()));
+        Error(**fst_i, StrCat("Cannot export non-FST variable: ",
+                                    (*fst_i)->Get()));
         return;
       }
       Transducer* fst = *env_->Get<DataType>(**fst_i)->get<Transducer*>();
@@ -481,14 +484,14 @@ class AstEvaluator : public AstWalker {
     if (fa_node->Size() != arguments->size()) {
       Error(debug_location_node,
             StrCat("Expected ", fa_node->Size(), " arguments but got ",
-                   arguments->size()));
+                         arguments->size()));
     }
     for (int i = 0; Success() && i < fa_node->Size(); ++i) {
       IdentifierNode* fa_identifier =
           static_cast<IdentifierNode*>((*fa_node)[i]);
       if (fa_identifier->HasNamespaces()) {
-        Error(*fa_identifier,
-              StrCat("Invalid function argument: ", fa_identifier->Get()));
+        Error(*fa_identifier, StrCat("Invalid function argument: ",
+                                           fa_identifier->Get()));
         break;
       }
       const string& arg_name = fa_identifier->GetIdentifier();
@@ -601,7 +604,8 @@ class AstEvaluator : public AstWalker {
         VLOG(2) << "Identifier Fst: " << identifier->Get();
         DataType* original = env_->Get<DataType>(*identifier);
         if (!original) {
-          Error(*identifier, StrCat("Undefined symbol: ", identifier->Get()));
+          Error(*identifier,
+                StrCat("Undefined symbol: ", identifier->Get()));
           return NULL;
         }
         output = original->Copy();
@@ -654,7 +658,7 @@ class AstEvaluator : public AstWalker {
         if (!Success() || !args) {
           Error(*func_identifier_node,
                 StrCat("Unable to bind all arguments for function call: ",
-                       func_identifier_node->Get()));
+                             func_identifier_node->Get()));
           return NULL;
         }
 
@@ -683,8 +687,9 @@ class AstEvaluator : public AstWalker {
         }
 
         if (!function_found) {
-          Error(*func_identifier_node, StrCat("Undefined function identifier: ",
-                                              func_identifier_node->Get()));
+          Error(*func_identifier_node,
+                StrCat("Undefined function identifier: ",
+                             func_identifier_node->Get()));
           return NULL;
         }
 

@@ -77,6 +77,10 @@ class AbstractGrmManager {
                     string* output,
                     const string& pdt_parens_rule = "",
                     const string& mpdt_assignments_rule = "") const;
+  // Unlike RewriteBytes(), The MutableTransducer output of Rewrite() contains
+  // all the possible output paths. A Rewrite() call only returns false if the
+  // specified rule(s) cannot be found. Notably, the call returns true even if
+  // the output transducer contains no accepting path.
   bool Rewrite(const string& rule, const string& input,
                MutableTransducer* output,
                const string& pdt_parens_rule = "",
@@ -326,6 +330,153 @@ void AbstractGrmManager<Arc>::StringifyFst(MutableTransducer* fst) {
   fst::Project(&temp, fst::PROJECT_OUTPUT);
   fst::RmEpsilon(&temp);
   *fst = temp;
+}
+
+// Triple of main rule, pdt_parens and mpdt assignments
+
+struct RuleTriple {
+  string main_rule, pdt_parens_rule, mpdt_assignments_rule;
+
+  explicit RuleTriple(const string& rule_def) {
+    auto main_pos = rule_def.find('$');
+    if (main_pos == string::npos) {
+      main_pos = rule_def.find(':');
+    }
+    main_rule = rule_def.substr(0, main_pos);
+    if (main_pos == string::npos) {
+      return;
+    }
+    auto pdt_parens_pos = rule_def.find('$', main_pos + 1);
+    if (pdt_parens_pos == string::npos) {
+      pdt_parens_pos = rule_def.find(':', main_pos + 1);
+    }
+    if (pdt_parens_pos == string::npos) {
+      pdt_parens_rule = rule_def.substr(main_pos + 1);
+      return;
+    }
+    pdt_parens_rule =
+        rule_def.substr(main_pos + 1, pdt_parens_pos - main_pos - 1);
+    mpdt_assignments_rule = rule_def.substr(pdt_parens_pos + 1);
+  }
+};
+
+// Does not own the grm pointer.
+template <typename Arc>
+class RuleCascade {
+  typedef fst::Fst<Arc> Transducer;
+  typedef fst::VectorFst<Arc> MutableTransducer;
+
+ public:
+  RuleCascade() : grm_(nullptr) {}
+  // Initializes the cascade from rule triples.
+  bool Init(const AbstractGrmManager<Arc>* grm,
+            std::vector<RuleTriple> rule_triples);
+  // Parses the rule definitions and initializes the cascade.
+  bool InitFromDefs(const AbstractGrmManager<Arc>* grm,
+                    const std::vector<string>& rule_defs);
+  ~RuleCascade() {}
+
+  bool RewriteBytes(const string& input, string* output) const;
+  bool RewriteBytes(const Transducer& input, string* output) const;
+  bool Rewrite(const string& input, MutableTransducer* output) const;
+  bool Rewrite(const Transducer& input, MutableTransducer* output) const;
+
+ private:
+  // Validates all rules.
+  bool ValidateRules();
+  const AbstractGrmManager<Arc>* grm_;
+  std::vector<RuleTriple> rule_triples_;
+};
+
+template <typename Arc>
+bool RuleCascade<Arc>::ValidateRules() {
+  for (auto& rule_triple : rule_triples_) {
+    if (!grm_->GetFst(rule_triple.main_rule)) {
+      LOG(ERROR) << "Cannot find rule: " << rule_triple.main_rule;
+      return false;
+    }
+    if (!rule_triple.pdt_parens_rule.empty() &&
+        !grm_->GetFst(rule_triple.pdt_parens_rule)) {
+      LOG(ERROR) << "Cannot find rule: " << rule_triple.pdt_parens_rule;
+      return false;
+    }
+    if (!rule_triple.mpdt_assignments_rule.empty() &&
+        !grm_->GetFst(rule_triple.mpdt_assignments_rule)) {
+      LOG(ERROR) << "Cannot find rule: " << rule_triple.mpdt_assignments_rule;
+      return false;
+    }
+  }
+  return true;
+}
+
+template <typename Arc>
+bool RuleCascade<Arc>::Init(const AbstractGrmManager<Arc>* grm,
+                            std::vector<RuleTriple> rule_triples) {
+  grm_ = grm;
+  rule_triples_ = std::move(rule_triples);
+  return ValidateRules();
+}
+
+template <typename Arc>
+bool RuleCascade<Arc>::InitFromDefs(const AbstractGrmManager<Arc>* grm,
+                                    const std::vector<string>& rules) {
+  grm_ = grm;
+  for (auto& rule : rules) {
+    rule_triples_.push_back(RuleTriple{rule});
+  }
+  return ValidateRules();
+}
+
+template <typename Arc>
+bool RuleCascade<Arc>::RewriteBytes(const string& input,
+                                    string* output) const {
+  fst::StringCompiler<Arc> string_compiler(fst::StringTokenType::BYTE);
+  MutableTransducer input_fst;
+  if (!string_compiler(input, &input_fst))
+    return false;
+  MutableTransducer output_fst;
+  if (!Rewrite(input_fst, &output_fst))
+    return false;
+  AbstractGrmManager<Arc>::StringifyFst(&output_fst);
+  fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE);
+  return printer(output_fst, output);
+}
+
+template <typename Arc>
+bool RuleCascade<Arc>::RewriteBytes(const Transducer& input,
+                                    string* output) const {
+  MutableTransducer output_fst;
+  if (!Rewrite(input, &output_fst))
+    return false;
+  AbstractGrmManager<Arc>::StringifyFst(&output_fst);
+  fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE);
+  return printer(output_fst, output);
+}
+
+template <typename Arc>
+bool RuleCascade<Arc>::Rewrite(const string& input,
+                               MutableTransducer* output) const {
+  fst::StringCompiler<Arc> string_compiler(fst::StringTokenType::BYTE);
+  MutableTransducer str_fst;
+  if (!string_compiler(input, &str_fst))
+    return false;
+  return Rewrite(str_fst, output);
+}
+
+template <typename Arc>
+bool RuleCascade<Arc>::Rewrite(const Transducer& input,
+                               MutableTransducer* output) const {
+  MutableTransducer tmp_input(input);
+  CHECK_NOTNULL(grm_);
+  for (auto& rule_triple : rule_triples_) {
+    if (!grm_->Rewrite(rule_triple.main_rule,
+                       tmp_input, output,
+                       rule_triple.pdt_parens_rule,
+                       rule_triple.mpdt_assignments_rule))
+      return false;
+    tmp_input = *output;
+  }
+  return true;
 }
 
 }  // namespace thrax

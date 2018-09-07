@@ -40,8 +40,8 @@ using std::vector;
 #include <fst/determinize.h>
 #include <fst/equivalent.h>
 #include <fst/project.h>
+#include <fst/prune.h>
 #include <fst/rmepsilon.h>
-#include <fst/shortest-path.h>
 #include <fst/string.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
@@ -114,29 +114,35 @@ class AssertEqual : public BinaryFstFunction<Arc> {
     fst::RmEpsilon(mutable_left);
     MutableTransducer determinized_left;
     fst::Determinize(*mutable_left, &determinized_left);
-    fst::ShortestPath(determinized_left, mutable_left);
+    fst::Prune(determinized_left, mutable_left, Arc::Weight::One());
     fst::ArcMap(mutable_left, fst::RmWeightMapper<Arc>());
     MutableTransducer mutable_right(right);
     fst::Project(&mutable_right, fst::PROJECT_OUTPUT);
     fst::RmEpsilon(&mutable_right);
     MutableTransducer determinized_right;
     fst::Determinize(mutable_right, &determinized_right);
-    fst::ShortestPath(determinized_right, &mutable_right);
+    fst::Prune(determinized_right, &mutable_right, Arc::Weight::One());
     fst::ArcMap(&mutable_right, fst::RmWeightMapper<Arc>());
-    if (!fst::Equivalent(*mutable_left, mutable_right)) {
+    MutableTransducer intersection;
+    fst::Intersect(*mutable_left, mutable_right, &intersection);
+    // If both mutable_left and mutable_right have zero states, then they count
+    // as equivalent. We only consider the intersection a failure if at least
+    // one of them has some states.
+    if ((mutable_left->NumStates() != 0 ||
+         mutable_right.NumStates() != 0) &&
+        intersection.Start() == fst::kNoStateId) {
       // Print strings for debug message.
       // TODO(rws): This is still going to fail to produce useful output for
       // extended labels since those will have labels outside the range of BYTE
       // or UTF8
       fst::RmEpsilon(mutable_left);
       fst::RmEpsilon(&mutable_right);
-      fst::StringPrinter<Arc> printer(mode, symbols);
       string lstring;
       if (mutable_left->Start() == fst::kNoStateId) {
         lstring = "NULL";
       } else {
         string content;
-        CHECK(printer(*mutable_left, &content));
+        CoerceToString(*mutable_left, &content, symbols);
         lstring = "\"" + (content) + "\"";
       }
       string rstring;
@@ -144,7 +150,7 @@ class AssertEqual : public BinaryFstFunction<Arc> {
         rstring = "NULL";
       } else {
         string content;
-        CHECK(printer(mutable_right, &content));
+        CoerceToString(mutable_right, &content, symbols);
         rstring = "\"" + (content) + "\"";
       }
       std::cout << "Arguments to AssertEqual are not equivalent:\n"
@@ -152,12 +158,29 @@ class AssertEqual : public BinaryFstFunction<Arc> {
                 << "     got: " << lstring << "\n"
                 << std::endl;
       delete mutable_left;
-      return NULL;
+      return nullptr;
     }
     return mutable_left;
   }
 
  private:
+  // Coerces an FST to a string by calling ShortestPath, TopSort, and the
+  // string printer. This is necessary so we have exactly one string to
+  // to show in the debug message.
+  void CoerceToString(const MutableTransducer &fst, string *str,
+                      const fst::SymbolTable *symbols = nullptr) {
+    fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE,
+                                        symbols);
+    if (fst.Properties(fst::kString, true) == fst::kString) {
+      printer(fst, str);
+    } else {
+      MutableTransducer string_fst(fst);
+      fst::ShortestPath(fst, &string_fst);
+      fst::TopSort(&string_fst);
+      printer(string_fst, str);
+    }
+  }
+
   DISALLOW_COPY_AND_ASSIGN(AssertEqual<Arc>);
 };
 
