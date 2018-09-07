@@ -1,27 +1,11 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: ttai@google.com (Terry Tai)
-//
-// This function removes epsilon arcs from an FST.  The argument FST will be
-// expanded, and the epsilon arcs removed in place.
+// This function removes epsilon arcs from an FST. The argument FST is be
+// expanded so that epsilon arcs can be removed in place.
 
 #ifndef THRAX_RMEPSILON_H_
 #define THRAX_RMEPSILON_H_
 
 #include <iostream>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -39,17 +23,16 @@ class RmEpsilon : public UnaryFstFunction<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
 
   RmEpsilon() {}
-  virtual ~RmEpsilon() {}
+  ~RmEpsilon() final {}
 
  protected:
-  virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const std::vector<DataType*>& args) {
+  Transducer* UnaryFstExecute(const Transducer& fst,
+                              const std::vector<DataType*>& args) final {
     if (args.size() != 1) {
       std::cout << "RmEpsilon: Expected 1 argument but got " << args.size()
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
-
     MutableTransducer* output = new MutableTransducer(fst);
     fst::RmEpsilon(output);
     return output;

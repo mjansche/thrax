@@ -11,7 +11,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -41,17 +40,16 @@ class AssertNull : public UnaryFstFunction<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
 
   AssertNull() {}
-  virtual ~AssertNull() {}
+  ~AssertNull() final {}
 
  protected:
-  virtual Transducer* UnaryFstExecute(const Transducer& left,
-                                      const std::vector<DataType*>& args) {
+  Transducer* UnaryFstExecute(const Transducer& left,
+                              const std::vector<DataType*>& args) final {
     if (args.size() != 1) {
       std::cout << "AssertNull: Expected 1 argument but got "
                 << args.size() << std::endl;
       return nullptr;
     }
-
     MutableTransducer* mutable_left = new MutableTransducer(left);
     fst::Project(mutable_left, fst::PROJECT_OUTPUT);
     fst::RmEpsilon(mutable_left);

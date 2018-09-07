@@ -68,7 +68,7 @@ class PrefixTree {
     INode *n = root_;
     for (/* empty */; iter1 != end1; ++iter1) {
       if (!*iter1) continue;  // Skips over epsilons.
-      n = LookupOrInsertNew(&n->children, *iter1);
+      n = thrax::LookupOrInsertNew(&n->children, *iter1);
       if (kNoStateId == n->state) n->state = num_states_++;
     }
     if (!n->output) {
@@ -78,7 +78,7 @@ class PrefixTree {
     ONode *o = n->output;
     for (/* empty */; iter2 != end2; ++iter2) {
       if (!*iter2) continue;  // Skips over epsilons.
-      o = LookupOrInsertNew(&o->children, *iter2);
+      o = thrax::LookupOrInsertNew(&o->children, *iter2);
       if (kNoStateId == o->state)
         o->state = num_states_++;
     }
@@ -122,7 +122,7 @@ class PrefixTree {
   }
 
   // Write the current prefix tree transducer to a mutable FST.
-  void ToFst(MutableFst<Arc> *fst) {
+  void ToFst(MutableFst<Arc> *fst) const {
     fst->DeleteStates();
     if (num_states_ == 0) {
       CHECK(!root_);

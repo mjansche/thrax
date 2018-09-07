@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2005-2016 Google, Inc.
-# Author: rws@google.com (Richard Sproat)
-#
 # To test this grammar one can use thraxrewrite-tester, e.g., as follows:
 #
 # $ thraxrewrite-tester --far=replace.far --rules=MEASURE

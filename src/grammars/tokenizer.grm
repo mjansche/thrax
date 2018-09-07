@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2005-2016 Google, Inc.
-# Author: kbg@google.com (Kyle Gorman)
-#
 # Penn Treebank tokenizer grammar, based on the tokenizer function in
 # DetectorMorse (http://github.com/cslu-nlp/DetectorMorse), which is in turn a
 # gently-optimized version of the NLTK tokenizer (http://github.com/nltk/nltk),

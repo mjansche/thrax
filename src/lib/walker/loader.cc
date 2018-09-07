@@ -9,10 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: ttai@google.com (Terry Tai)
-//         rws@google.com (Richard Sproat)
 
 #include <string>
 

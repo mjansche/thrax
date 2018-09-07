@@ -11,25 +11,19 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
-#include <fst/arc-map.h>
-#include <fst/determinize.h>
-#include <fst/equivalent.h>
 #include <fst/project.h>
 #include <fst/rmepsilon.h>
-#include <fst/shortest-path.h>
-#include <fst/string.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
 
 DECLARE_bool(save_symbols);  // From util/flags.cc.
 
-// TODO(rws): some day we should make this so that it doesn't return a
-// value, but merely runs the assertion. That, however, would require changing
-// the parser.
+// TODO(rws): some day we should make this so that it doesn't return a value,
+// but merely runs the assertion. That, however, would require changing the
+// parser.
 
 namespace thrax {
 namespace function {
@@ -41,18 +35,17 @@ class AssertEmpty : public UnaryFstFunction<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
 
   AssertEmpty() {}
-  ~AssertEmpty() override {}
+  ~AssertEmpty() final {}
 
  protected:
-  Transducer* UnaryFstExecute (const Transducer& left,
-                               const std::vector<DataType*>& args) override {
+  Transducer* UnaryFstExecute(const Transducer& left,
+                              const std::vector<DataType*>& args) final {
     if (args.size() != 1) {
       std::cout << "AssertEmpty: Expected 1 argument but got "
                 << args.size() << std::endl;
       return nullptr;
     }
-
-    MutableTransducer* mutable_left = new MutableTransducer(left);
+    auto *mutable_left = new MutableTransducer(left);
     fst::Project(mutable_left, fst::PROJECT_OUTPUT);
     fst::RmEpsilon(mutable_left);
     if (mutable_left->NumStates() == 1 &&
@@ -60,17 +53,12 @@ class AssertEmpty : public UnaryFstFunction<Arc> {
         mutable_left->Final(0) != Arc::Weight::Zero()) {
       return mutable_left;
     } else {
-      std::cout << "Argument to AssertEmpty is not empty:"
-                << std::endl;
+      std::cout << "Argument to AssertEmpty is not empty:" << std::endl;
       delete mutable_left;
       return nullptr;
     }
   }
-
- private:
-  DISALLOW_COPY_AND_ASSIGN(AssertEmpty<Arc>);
 };
-
 
 }  // namespace function
 }  // namespace thrax

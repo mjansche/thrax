@@ -10,17 +10,12 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
-// STL container functions used by the nlp/grm/language library
+// STL container functions.
 
 #ifndef THRAX_COMPAT_STL_FUNCTIONS_H_
 #define THRAX_COMPAT_STL_FUNCTIONS_H_
 
 namespace thrax {
-
-using std::pair;
 
 template <class ForwardIterator>
 void STLDeleteContainerPointers(ForwardIterator begin,
@@ -43,79 +38,6 @@ void STLDeleteContainerPairPointers(ForwardIterator begin,
   }
 }
 
-template <class T>
-void STLDeleteElements(T *container) {
-  if (!container) return;
-  STLDeleteContainerPointers(container->begin(), container->end());
-  container->clear();
-}
-
-template <class Collection>
-const typename Collection::value_type::second_type&
-FindOrDie(const Collection& collection,
-          const typename Collection::value_type::first_type& key) {
-  typename Collection::const_iterator it = collection.find(key);
-  if (it == collection.end())  {
-    LOG(FATAL) << "Map key not found: " << key;
-  }
-  return it->second;
-}
-
-template <class Collection>
-const typename Collection::value_type::second_type*
-FindOrNull(const Collection& collection,
-           const typename Collection::value_type::first_type& key) {
-  typename Collection::const_iterator it = collection.find(key);
-  if (it == collection.end()) {
-    return NULL;
-  }
-  return &it->second;
-}
-
-template <class Collection>
-typename Collection::value_type::second_type*
-FindOrNull(Collection& collection,
-           const typename Collection::value_type::first_type& key) {
-  typename Collection::iterator it = collection.find(key);
-  if (it == collection.end()) {
-    return 0;
-  }
-  return &it->second;
-}
-
-template <class Collection>
-bool InsertIfNotPresent(
-    Collection * const collection,
-    const typename Collection::value_type::first_type& key,
-    const typename Collection::value_type::second_type& value) {
-  pair<typename Collection::iterator, bool> ret =
-    collection->insert(typename Collection::value_type(key, value));
-  return ret.second;
-}
-
-template <class Collection>
-typename Collection::value_type::second_type* const
-InsertOrReturnExisting(Collection* const collection,
-                       const typename Collection::value_type& vt) {
-  pair<typename Collection::iterator, bool> ret = collection->insert(vt);
-  if (ret.second) {
-    return NULL;  // Inserted, no existing previous value.
-  } else {
-    return &ret.first->second;  // Return address of already existing value.
-  }
-}
-
-// Same as above, except for explicit key and data.
-template<class Collection>
-typename Collection::value_type::second_type* const
-InsertOrReturnExisting(
-    Collection* const collection,
-    const typename Collection::value_type::first_type& key,
-    const typename Collection::value_type::second_type& data) {
-  return InsertOrReturnExisting(collection,
-                                typename Collection::value_type(key, data));
-}
-
 template <class ForwardIterator>
 void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
                                           ForwardIterator end) {
@@ -126,32 +48,96 @@ void STLDeleteContainerPairSecondPointers(ForwardIterator begin,
   }
 }
 
-}  // namespace thrax
+template <class T>
+void STLDeleteElements(T *container) {
+  if (!container) return;
+  STLDeleteContainerPointers(container->begin(), container->end());
+  container->clear();
+}
 
-namespace fst {
+template <typename T>
+void STLDeleteValues(T *v) {
+  if (!v) return;
+  STLDeleteContainerPairSecondPointers(v->begin(), v->end());
+  v->clear();
+}
 
-// used by prefixtree.h
+template <class Collection>
+const typename Collection::value_type::second_type
+&FindOrDie(const Collection &collection,
+          const typename Collection::value_type::first_type &key) {
+  const auto it = collection.find(key);
+  if (it == collection.end())  {
+    LOG(FATAL) << "Map key not found: " << key;
+  }
+  return it->second;
+}
 
-template<class T>
+template <class Collection>
+const typename Collection::value_type::second_type
+*FindOrNull(const Collection& collection,
+           const typename Collection::value_type::first_type &key) {
+  const auto it = collection.find(key);
+  if (it == collection.end()) {
+    return nullptr;
+  }
+  return &it->second;
+}
+
+template <class Collection>
+typename Collection::value_type::second_type
+*FindOrNull(Collection &collection,
+           const typename Collection::value_type::first_type &key) {
+  auto it = collection.find(key);
+  if (it == collection.end()) {
+    return 0;
+  }
+  return &it->second;
+}
+
+template <class Collection>
+bool InsertIfNotPresent(Collection *const collection,
+    const typename Collection::value_type::first_type& key,
+    const typename Collection::value_type::second_type& value) {
+  return collection->emplace(key, value).second;
+}
+
+template <class Collection>
+typename Collection::value_type::second_type *const
+InsertOrReturnExisting(Collection *const collection,
+                       const typename Collection::value_type &vt) {
+  const auto ret = collection->insert(vt);
+  if (ret.second) {
+    return nullptr;  // Inserted, no existing previous value.
+  } else {
+    return &ret.first->second;  // Return address of already existing value.
+  }
+}
+
+// Same as above, except for explicit key and data.
+template <class Collection>
+typename Collection::value_type::second_type *const
+InsertOrReturnExisting(Collection *const collection,
+    const typename Collection::value_type::first_type &key,
+    const typename Collection::value_type::second_type &data) {
+  return InsertOrReturnExisting(collection, {key, data});
+}
+
+template <class T>
 void MapUtilAssignNewDefaultInstance(T **location) {
   *location = new T();
-}
+}                                  
 
-template<class T>
+template <class T>
 typename T::value_type::second_type
-LookupOrInsertNew(T* const collection,
-                  const typename T::value_type::first_type& key) {
-  pair<typename T::iterator, bool> ret =
-      collection->insert(
-          typename T::value_type(
-              key,
-              static_cast<typename T::value_type::second_type>(NULL)));
-  if (ret.second) {
-    MapUtilAssignNewDefaultInstance(&(ret.first->second));
-  }
-  return ret.first->second;
+LookupOrInsertNew(T *const collection,
+                  const typename T::value_type::first_type &key) {
+  auto result = collection->emplace(key,
+      static_cast<typename T::value_type::second_type>(nullptr));
+  if (result.second) MapUtilAssignNewDefaultInstance(&(result.first->second));
+  return result.first->second;
 }
 
-}  // namespace fst
+}  // namespace thrax
 
 #endif  // THRAX_COMPAT_STL_FUNCTIONS_H_

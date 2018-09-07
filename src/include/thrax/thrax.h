@@ -9,12 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
-// Implementation of DeletePointerClosure() and NewCallback() needed by
-// resource-map.h
 
 #ifndef THRAX_THRAX_H_
 #define THRAX_THRAX_H_

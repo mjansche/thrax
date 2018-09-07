@@ -56,7 +56,8 @@ void AstIdentifierCounter::Visit(IdentifierNode* node) {
     references_[name] = -1;    // -1 = infinite
   } else {
     int* count = InsertOrReturnExisting(&references_, name, 0);
-    if (count && *count != -1)  // New insertions will return NULL, so we only
+    if (count &&
+        *count != -1)  // New insertions will return nullptr, so we only
       ++(*count);               // update if we have a pre-existing value.
   }
 }

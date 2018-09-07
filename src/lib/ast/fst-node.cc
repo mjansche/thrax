@@ -17,7 +17,6 @@
 
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <thrax/string-node.h>
 #include <thrax/walker.h>
@@ -26,7 +25,7 @@ using std::vector;
 namespace thrax {
 
 FstNode::FstNode(FstNodeType type)
-    : Node(), type_(type), weight_(NULL), optimize_(false) {}
+    : Node(), type_(type), weight_(nullptr), optimize_(false) {}
 
 FstNode::~FstNode() {
   STLDeleteContainerPointers(arguments_.begin(), arguments_.end());

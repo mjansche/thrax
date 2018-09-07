@@ -1,19 +1,3 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: ttai@google.com (Terry Tai)
-//         rws@google.com (Richard Sproat)
-//
 // Creates a string FST given the string text.
 //
 // Note that error checking in this function may be harsher or missing, as this
@@ -29,9 +13,7 @@
 #include <map>
 #include <string>
 #include <utility>
-using std::pair; using std::make_pair;
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -66,16 +48,15 @@ class StringFst : public Function<Arc> {
  public:
   typedef fst::VectorFst<Arc> MutableTransducer;
 
-  StringFst() : Function<Arc>() {}
-  virtual ~StringFst() {}
+  StringFst() {}
+  ~StringFst() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     CHECK_GE(args.size(), 2);
-
     // Find the mode (and maybe the symbol table).
     enum fst::StringTokenType mode = fst::StringTokenType::BYTE;
-    const fst::SymbolTable* symtab = NULL;
+    const fst::SymbolTable* symtab = nullptr;
     switch (*args[0]->get<int>()) {
       case StringFstNode::BYTE: {
         CHECK_EQ(args.size(), 2);
@@ -94,7 +75,7 @@ class StringFst : public Function<Arc> {
           std::cout
               << "StringFst: Invalid symbol table for symbol table parse mode"
               << std::endl;
-          return NULL;
+          return nullptr;
         }
         symtab = args[2]->get<fst::SymbolTable>();
         break;
@@ -104,13 +85,11 @@ class StringFst : public Function<Arc> {
       }
     }
     fst::StringCompiler<Arc> compiler(mode, symtab);
-
     // Create a single state acceptor to serve as the basis onto which we'll
     // concatenate everything.
     MutableTransducer* fst(new MutableTransducer());
     fst->SetStart(fst->AddState());
     fst->SetFinal(fst->Start(), Arc::Weight::One());
-
     // Go through the actual text and process each block, escaping the
     // backslashed characters and generating labels if necessary.
     const string& text = *args[1]->get<string>();
@@ -119,19 +98,18 @@ class StringFst : public Function<Arc> {
     bool in_genlab = false;  // Whether we're currently in generate-label mode.
     for (int i = 0; i < text.length(); ++i) {
       char c = text[i];
-
       if (c == '[' && mode != fst::StringTokenType::SYMBOL) {
         if (in_genlab) {
           std::cout << "StringFst: Cannot start new generated label while in "
                     << "previous label" << std::endl;
           delete fst;
-          return NULL;
+          return nullptr;
         }
         if (!AddBlock(&compiler, &chunk, fst)) {
           std::cout << "StringFst: Failed to compile chunk: " << chunk
                     << std::endl;
           delete fst;
-          return NULL;
+          return nullptr;
         }
         in_genlab = true;
       } else if (c == ']' && mode != fst::StringTokenType::SYMBOL) {
@@ -140,21 +118,21 @@ class StringFst : public Function<Arc> {
               << "StringFst: Cannot terminate generated label without already "
               << "being in one" << std::endl;
           delete fst;
-          return NULL;
+          return nullptr;
         }
         for (int i = 0; i < chunk.length(); ++i) {
           if (isspace(chunk[i])) {
             std::cout << "StringFst: Cannot have labels containing whitespace: "
                       << chunk << std::endl;
             delete fst;
-            return NULL;
+            return nullptr;
           }
         }
         if (!AddGeneratedLabel(&chunk, fst, mode)) {
           std::cout << "StringFst: Failed to generate label: " << chunk
                     << std::endl;
           delete fst;
-          return NULL;
+          return nullptr;
         }
         in_genlab = false;
       } else {
@@ -166,7 +144,7 @@ class StringFst : public Function<Arc> {
                 << "StringFst: Unterminated escaped character at string end"
                 << std::endl;
             delete fst;
-            return NULL;
+            return nullptr;
           }
           c = text[i];
           switch (c) {
@@ -185,14 +163,13 @@ class StringFst : public Function<Arc> {
       std::cout << "StringFst: Unexpected string termination in generated label"
                 << std::endl;
       delete fst;
-      return NULL;
+      return nullptr;
     }
     if (!AddBlock(&compiler, &chunk, fst)) {
       std::cout << "StringFst: Failed to compile chunk: " << chunk << std::endl;
       delete fst;
-      return NULL;
+      return nullptr;
     }
-
     fst::RmEpsilon(fst);
     if (FLAGS_save_symbols) {
       if (symtab) {
@@ -211,7 +188,8 @@ class StringFst : public Function<Arc> {
 
  public:
   // Returns a symbol table corresponding to the generated labels used thus far
-  // in this compilation.  This returns NULL if there were no generated labels.
+  // in this compilation.  This returns nullptr if there were no generated
+  // labels.
   //
   // If FLAGS_save_symbols is set, we also add these labels to the byte and utf8
   // symbol tables, so that these can get reassigned to the transducers as
@@ -221,10 +199,7 @@ class StringFst : public Function<Arc> {
   // top_level indicates this.
   static fst::SymbolTable* GetLabelSymbolTable(bool top_level) {
     fst::MutexLock lock(&map_mutex_);
-
-    if (symbol_label_map_.empty())
-      return NULL;
-
+    if (symbol_label_map_.empty()) return nullptr;
     fst::SymbolTable* symtab = new fst::SymbolTable("");
     for (Map::const_iterator i = symbol_label_map_.begin();
          i != symbol_label_map_.end(); ++i) {
@@ -234,7 +209,6 @@ class StringFst : public Function<Arc> {
         AddToUtf8SymbolTable(i->first, i->second);
       }
     }
-
     return symtab;
   }
 
@@ -242,12 +216,10 @@ class StringFst : public Function<Arc> {
   // map, returning true on success or failure if we encounter any conflicts.
   static bool MergeLabelSymbolTable(const fst::SymbolTable& symtab) {
     fst::MutexLock lock(&map_mutex_);
-
     bool success = true;
     for (int i = 0; i < symtab.NumSymbols(); ++i) {
       int64 label = symtab.GetNthKey(i);
       string symbol = symtab.Find(label);
-
       // Checks to see if we already have this label paired with this
       // symbol. FSTs associated with the incoming symbol table will get
       // remapped as needed.
@@ -320,10 +292,8 @@ class StringFst : public Function<Arc> {
   // found.
   static bool SymbolToGeneratedLabel(const string& symbol, int64* label) {
     int64* answer = FindOrNull(symbol_label_map_, symbol);
-
     if (!answer)
       return false;
-
     *label = *answer;
     return true;
   }
@@ -336,7 +306,6 @@ class StringFst : public Function<Arc> {
     MutableTransducer chunk_fst;
     if (!(*compiler)(*chunk, &chunk_fst))
       return false;
-
     fst::Concat(fst, chunk_fst);
     chunk->clear();
     return true;
@@ -367,12 +336,10 @@ class StringFst : public Function<Arc> {
                          enum fst::StringTokenType mode) {
     VLOG(3) << "Finding label for symbol: " << *symbol;
     int64 label;
-
     // First, we'll check to see if the symbol is actually just a number.  If
     // so, we'll just use that number as the label.
-    char* remainder = NULL;
+    char* remainder = nullptr;
     label = strtol(symbol->c_str(), &remainder, 0);
-
     // So if we're at the end of the string, then we've found a valid (whole)
     // number.  Otherwise (i.e., in this case) we have other junk, so we'll
     // treat it as a generated text symbol.
@@ -420,7 +387,6 @@ class StringFst : public Function<Arc> {
     genlab_fst.SetStart(p);
     genlab_fst.AddArc(p, Arc(label, label, Arc::Weight::One(), q));
     genlab_fst.SetFinal(q, Arc::Weight::One());
-
     fst::Concat(fst, genlab_fst);
     symbol->clear();
     return true;
@@ -431,7 +397,6 @@ class StringFst : public Function<Arc> {
   // it used to be since it clears more than just the symbol_label_map_
   static void ClearSymbolLabelMapForTest() {
     fst::MutexLock lock(&map_mutex_);
-
     symbol_label_map_.clear();
     label_symbol_map_.clear();
     remap_.clear();
@@ -451,17 +416,22 @@ class StringFst : public Function<Arc> {
   friend class FeatureTest;
   friend class FeatureVectorTest;
   friend class StringFstTest;
+
   DISALLOW_COPY_AND_ASSIGN(StringFst<Arc>);
 };
 
 template <typename Arc>
 typename StringFst<Arc>::Map StringFst<Arc>::symbol_label_map_;
+
 template <typename Arc>
 typename StringFst<Arc>::InverseMap StringFst<Arc>::label_symbol_map_;
+
 template <typename Arc>
 typename StringFst<Arc>::Remap StringFst<Arc>::remap_;
+
 template <typename Arc>
 int64 StringFst<Arc>::next_label_ = FLAGS_generated_label_start_index;
+
 template <typename Arc>
 fst::Mutex StringFst<Arc>::map_mutex_;
 

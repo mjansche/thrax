@@ -23,7 +23,6 @@
 #include <map>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -98,8 +97,8 @@ class AbstractGrmManager {
   // The following functions give access to, modify, or serialize internal data.
 
   // Returns the FST associated with the particular name.  This class returns
-  // the actual pointer to the FST (or NULL if it is not found), so the caller
-  // should not free the pointer.
+  // the actual pointer to the FST (or nullptr if it is not found), so the
+  // caller should not free the pointer.
   const Transducer* GetFst(const string& name) const;
 
   // Gets the named FST, just like GetFst(), but this function doesn't
@@ -148,8 +147,7 @@ AbstractGrmManager<Arc>::~AbstractGrmManager() {
 template <typename Arc>
 template <typename FarReader>
 bool AbstractGrmManager<Arc>::LoadArchive(FarReader *reader) {
-  STLDeleteContainerPairSecondPointers(fsts_.begin(), fsts_.end());
-  fsts_.clear();
+  STLDeleteValues(&fsts_);
   for (reader->Reset(); !reader->Done(); reader->Next()) {
     const string& name = reader->GetKey();
     const Transducer* fst = new MutableTransducer(*(reader->GetFst()));
@@ -183,7 +181,7 @@ AbstractGrmManager<Arc>::GetFst(const string& name) const {
   if (pos != fsts_.end()) {
     return pos->second;
   }
-  return NULL;
+  return nullptr;
 }
 
 template <typename Arc>
@@ -193,7 +191,7 @@ AbstractGrmManager<Arc>::GetFstSafe(const string& name) const {
   if (fst) {
     return fst->Copy(true);
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 
@@ -268,7 +266,7 @@ bool AbstractGrmManager<Arc>::Rewrite(
     return false;
   }
 
-  const Transducer *pdt_parens_fst = NULL;
+  const Transducer* pdt_parens_fst = nullptr;
   if (!pdt_parens_rule.empty()) {
     pdt_parens_fst = GetFstSafe(pdt_parens_rule);
     if (!pdt_parens_fst) {
@@ -278,7 +276,7 @@ bool AbstractGrmManager<Arc>::Rewrite(
     }
   }
 
-  const Transducer *mpdt_assignments_fst = NULL;
+  const Transducer* mpdt_assignments_fst = nullptr;
   if (!mpdt_assignments_rule.empty()) {
     mpdt_assignments_fst = GetFstSafe(mpdt_assignments_rule);
     if (!mpdt_assignments_fst) {

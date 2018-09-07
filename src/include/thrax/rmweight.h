@@ -1,4 +1,4 @@
-// Removes weights from arcs and final states (i.e. setting them to
+// Removes weights from arcs and final states (i.e., by setting them all to
 // Weight::One()).
 
 #ifndef THRAX_RMWEIGHT_H_
@@ -21,17 +21,16 @@ class RmWeight : public UnaryFstFunction<Arc> {
   typedef fst::Fst<Arc> Transducer;
 
   RmWeight() {}
-  ~RmWeight() override {}
+  ~RmWeight() final {}
 
  protected:
   Transducer* UnaryFstExecute(const Transducer& fst,
-                              const std::vector<DataType*>& args) override {
+                              const std::vector<DataType*>& args) final {
     if (args.size() != 1) {
       std::cout << "Invert: Expected 1 argument but got " << args.size()
                 << std::endl;
       return nullptr;
     }
-
     return new fst::ArcMapFst<Arc, Arc, fst::RmWeightMapper<Arc>>(
         fst, fst::RmWeightMapper<Arc>());
   }

@@ -1,7 +1,6 @@
 #ifndef FST_UTIL_OPTIMIZE_OPTIMIZE_H_
 #define FST_UTIL_OPTIMIZE_OPTIMIZE_H_
 
-#include <memory>
 #include <type_traits>
 
 #include <fst/compat.h>
@@ -29,16 +28,9 @@ void MaybeRmEpsilon(MutableFst<Arc> *fst, bool compute_props = false) {
   }
 }
 
-// Simulates determinization "in place".
-template <class Arc>
-void Determinize(MutableFst<Arc> *fst) {
-  std::unique_ptr<MutableFst<Arc>> tfst(fst->Copy());
-  Determinize(*tfst, fst);
-}
-
 template <class Arc>
 void DeterminizeAndMinimize(MutableFst<Arc> *fst) {
-  Determinize(fst);
+  Determinize(*fst, fst);
   Minimize(fst);
 }
 
@@ -72,7 +64,6 @@ void OptimizeAcceptor(MutableFst<Arc> *fst, bool compute_props = false) {
   // Combines identically labeled arcs with the same source and destination,
   // and sums their weights.
   ArcSumMap(fst);
-
   // The FST has non-idempotent weights; limiting optimization possibilities.
   if (fst->Properties(kIDeterministic, compute_props) != kIDeterministic) {
     // But "any acyclic weighted automaton over a zero-sum-free semiring has
@@ -143,7 +134,6 @@ void OptimizeTransducer(MutableFst<Arc> *fst, bool compute_props = false) {
   // Combines identically labeled arcs with the same source and destination,
   // and sums their weights.
   ArcSumMap(fst);
-
   // If the FST is not (known to be) deterministic, determinize it.
   if (fst->Properties(kIDeterministic, compute_props) != kIDeterministic) {
     // FST labels are always encoded before determinization and minimization.
@@ -186,10 +176,7 @@ template <class Arc>
 void OptimizeStringCrossProducts(MutableFst<Arc> *fst,
                                  bool compute_props = false) {
   // Pushes labels towards the initial state.
-  {
-    std::unique_ptr<MutableFst<Arc>> tfst(fst->Copy());
-    Push<Arc, REWEIGHT_TO_INITIAL>(*tfst, fst, kPushLabels);
-  }
+  Push<Arc, REWEIGHT_TO_INITIAL>(*fst, fst, kPushLabels);
   internal::MaybeRmEpsilon(fst, compute_props);
 }
 
@@ -203,7 +190,7 @@ void OptimizeDifferenceRhs(MutableFst<Arc> *fst, bool compute_props = false) {
   // If the FST is not (known to be) deterministic, determinizes it; note that
   // this operation will not introduce epsilons as the input is an acceptor.
   if (fst->Properties(kIDeterministic, compute_props) != kIDeterministic) {
-    internal::Determinize(fst);
+    Determinize(*fst, fst);
   }
   // Minimally, RHS must be input label-sorted; the LHS does not need
   // arc-sorting when the RHS is deterministic (as it now should be).

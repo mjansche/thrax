@@ -24,7 +24,6 @@
 #include <map>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -68,7 +67,7 @@ class Namespace {
   template <typename T>
   bool InsertWithoutDelete(const string& identifier_name, T* resource) {
     const string& name = ConstructMapName(identifier_name);
-    return resources_->InsertWithDeleter(name, resource, NULL);
+    return resources_->InsertWithDeleter(name, resource, nullptr);
   }
 
   // The same as the above, but this time, we insert into the local namespace
@@ -79,14 +78,14 @@ class Namespace {
   }
   template <typename T>
   bool InsertLocalWithoutDelete(const string& identifier_name, T* resource) {
-    return local_env_.back()->InsertWithDeleter(
-        identifier_name, resource, NULL);
+    return local_env_.back()->InsertWithDeleter(identifier_name, resource,
+                                                nullptr);
   }
 
-  // Returns the resource associated with this namespace (and NULL if the
+  // Returns the resource associated with this namespace (and nullptr if the
   // provided name is not found or if the type is incorrect).  If the provided
-  // Namespace pointer-pointer is not NULL, then we'll also return the namespace
-  // where it was found.
+  // Namespace pointer-pointer is not nullptr, then we'll also return the
+  // namespace where it was found.
   template <typename T>
   T* Get(const IdentifierNode& identifier, Namespace** where) {
     // If the identifier doesn't have a namespace, then we should check the
@@ -114,11 +113,11 @@ class Namespace {
       }
     }
 
-    return NULL;
+    return nullptr;
   }
   template <typename T>
   T* Get(const IdentifierNode& identifier) {
-    return Get<T>(identifier, NULL);
+    return Get<T>(identifier, nullptr);
   }
 
   // Removes the provided identifier from the top-most local environment.

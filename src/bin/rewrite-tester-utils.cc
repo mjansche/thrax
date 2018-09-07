@@ -2,7 +2,6 @@
 #include <set>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <thrax/compat/utils.h>
 #include <fst/arc.h>
@@ -28,8 +27,6 @@ using fst::VectorFst;
 using thrax::FstToStrings;
 using thrax::GetGeneratedSymbolTable;
 using thrax::GrmManagerSpec;
-using thrax::Split;
-using thrax::Split;
 
 DEFINE_string(far, "", "Path to the FAR.");
 DEFINE_string(rules, "", "Names of the rewrite rules.");
@@ -50,8 +47,8 @@ static bool kHistoryFileInitialized = false;
 
 inline void InitializeHistoryFile() {
   // Create history file if it doesn't exist
-  if (!Open(FLAGS_history_file, "r")) {
-    File* fp = Open(FLAGS_history_file, "w");
+  if (!File::Open(FLAGS_history_file, "r")) {
+    File* fp = File::Open(FLAGS_history_file, "w");
     // Fail silently if we can't open it: just don't record history
     if (fp) fp->Close();
   }
@@ -95,15 +92,15 @@ RewriteTesterUtils::~RewriteTesterUtils() {
 
 void RewriteTesterUtils::Initialize() {
   CHECK(grm_.LoadArchive(FLAGS_far));
-  rules_ = Split(FLAGS_rules, ",");
-  byte_symtab_ = NULL;
-  utf8_symtab_ = NULL;
+  rules_ = thrax::StringSplit(FLAGS_rules, ',');
+  byte_symtab_ = nullptr;
+  utf8_symtab_ = nullptr;
   if (rules_.empty()) LOG(FATAL) << "--rules must be specified";
   for (size_t i = 0; i < rules_.size(); ++i) {
     thrax::RuleTriple triple(rules_[i]);
     const auto *fst = grm_.GetFst(triple.main_rule);
     if (!fst) {
-      LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
+      LOG(FATAL) << "grm.GetFst() must be non nullptr for rule: "
                  << triple.main_rule;
     }
     StdVectorFst vfst(*fst);
@@ -124,14 +121,14 @@ void RewriteTesterUtils::Initialize() {
     if (!triple.pdt_parens_rule.empty()) {
       fst = grm_.GetFst(triple.pdt_parens_rule);
       if (!fst) {
-        LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
+        LOG(FATAL) << "grm.GetFst() must be non nullptr for rule: "
                    << triple.pdt_parens_rule;
       }
     }
     if (!triple.mpdt_assignments_rule.empty()) {
       fst = grm_.GetFst(triple.mpdt_assignments_rule);
       if (!fst) {
-        LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
+        LOG(FATAL) << "grm.GetFst() must be non nullptr for rule: "
                    << triple.mpdt_assignments_rule;
       }
     }
@@ -149,7 +146,7 @@ void RewriteTesterUtils::Initialize() {
     compiler_ = new Compiler(fst::StringTokenType::SYMBOL, input_symtab_);
   }
 
-  output_symtab_ = NULL;
+  output_symtab_ = nullptr;
   if (FLAGS_output_mode == "byte") {
     type_ = BYTE;
   } else if (FLAGS_output_mode == "utf8") {

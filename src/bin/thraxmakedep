@@ -12,10 +12,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2005-2011 Google, Inc.
-# Author: rws@google.com (Richard Sproat)
-#
-# Helper function to create a makefile with the correct dependencies for
+# Helper function to create a Makefile with the correct dependencies for
 # compiling a suite of grammars.
 #
 # Usage: thraxmakedep top-level-grammar [makefile-target=Makefile]

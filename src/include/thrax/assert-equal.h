@@ -1,18 +1,3 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
 // Assert the equality of the first and second argument, issuing a warning if
 // the two are not the same and returning the value of the first. More
 // specifically, the first argument is assumed to be a transducer whose *output*
@@ -32,13 +17,12 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
 #include <fst/arc-map.h>
 #include <fst/determinize.h>
-#include <fst/equivalent.h>
+#include <fst/intersect.h>
 #include <fst/project.h>
 #include <fst/prune.h>
 #include <fst/rmepsilon.h>
@@ -62,20 +46,17 @@ class AssertEqual : public BinaryFstFunction<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
 
   AssertEqual() {}
-  virtual ~AssertEqual() {}
+  ~AssertEqual() final {}
 
  protected:
-  virtual Transducer* BinaryFstExecute(const Transducer& left,
-                                       const Transducer& right,
-                                       const std::vector<DataType*>& args) {
+  Transducer* BinaryFstExecute(const Transducer& left, const Transducer& right,
+                               const std::vector<DataType*>& args) final {
     if (args.size() < 2 || args.size() > 3) {
       std::cout << "AssertEqual: Expected 2 or 3 arguments but got "
                 << args.size() << std::endl;
-      return NULL;
+      return nullptr;
     }
-
-    // Optional third argument specifying the symbol table to use
-    typename fst::StringTokenType mode = fst::StringTokenType::BYTE;
+    auto mode = fst::StringTokenType::BYTE;
     const fst::SymbolTable* symbols = nullptr;
     if (args.size() > 2) {
       if (args[2]->is<string>()) {
@@ -90,26 +71,24 @@ class AssertEqual : public BinaryFstFunction<Arc> {
       } else {
         std::cout << "AssertEqual: Invalid parse mode or symbol table "
                   << "for symbols" << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
         std::cout << "AssertEqual: input symbol table of 1st argument "
                   << "does not match input symbol table of 2nd argument"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(left.OutputSymbols(), right.OutputSymbols())) {
         std::cout << "AssertEqual: output symbol table of 1st argument "
                   << "does not match output symbol table of 2nd argument"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-
-    MutableTransducer* mutable_left = new MutableTransducer(left);
+    auto *mutable_left = new MutableTransducer(left);
     fst::Project(mutable_left, fst::PROJECT_OUTPUT);
     fst::RmEpsilon(mutable_left);
     MutableTransducer determinized_left;
@@ -128,8 +107,7 @@ class AssertEqual : public BinaryFstFunction<Arc> {
     // If both mutable_left and mutable_right have zero states, then they count
     // as equivalent. We only consider the intersection a failure if at least
     // one of them has some states.
-    if ((mutable_left->NumStates() != 0 ||
-         mutable_right.NumStates() != 0) &&
+    if ((mutable_left->NumStates() != 0 || mutable_right.NumStates() != 0) &&
         intersection.Start() == fst::kNoStateId) {
       // Print strings for debug message.
       // TODO(rws): This is still going to fail to produce useful output for
@@ -139,19 +117,19 @@ class AssertEqual : public BinaryFstFunction<Arc> {
       fst::RmEpsilon(&mutable_right);
       string lstring;
       if (mutable_left->Start() == fst::kNoStateId) {
-        lstring = "NULL";
+        lstring = "nullptr";
       } else {
         string content;
-        CoerceToString(*mutable_left, &content, symbols);
-        lstring = "\"" + (content) + "\"";
+        AssertEqual<Arc>::CoerceToString(*mutable_left, &content, symbols);
+        lstring = "\"" + content + "\"";
       }
       string rstring;
       if (mutable_right.Start() == fst::kNoStateId) {
-        rstring = "NULL";
+        rstring = "nullptr";
       } else {
         string content;
-        CoerceToString(mutable_right, &content, symbols);
-        rstring = "\"" + (content) + "\"";
+        AssertEqual<Arc>::CoerceToString(mutable_right, &content, symbols);
+        rstring = "\"" + content + "\"";
       }
       std::cout << "Arguments to AssertEqual are not equivalent:\n"
                 << "  expect: " << rstring << "\n"
@@ -167,8 +145,8 @@ class AssertEqual : public BinaryFstFunction<Arc> {
   // Coerces an FST to a string by calling ShortestPath, TopSort, and the
   // string printer. This is necessary so we have exactly one string to
   // to show in the debug message.
-  void CoerceToString(const MutableTransducer &fst, string *str,
-                      const fst::SymbolTable *symbols = nullptr) {
+  static void CoerceToString(const MutableTransducer &fst, string *str,
+                             const fst::SymbolTable *symbols = nullptr) {
     fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE,
                                         symbols);
     if (fst.Properties(fst::kString, true) == fst::kString) {
@@ -180,8 +158,6 @@ class AssertEqual : public BinaryFstFunction<Arc> {
       printer(string_fst, str);
     }
   }
-
-  DISALLOW_COPY_AND_ASSIGN(AssertEqual<Arc>);
 };
 
 

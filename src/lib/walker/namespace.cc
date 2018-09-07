@@ -18,7 +18,6 @@
 #include <map>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <thrax/identifier-node.h>
 #include <thrax/algo/resource-map.h>
@@ -89,7 +88,7 @@ Namespace* Namespace::ResolveNamespaceInternal(
       ++(*identifier_nspos);
       return (*next)->ResolveNamespaceInternal(identifier, identifier_nspos);
     } else {
-      return NULL;
+      return nullptr;
     }
   }
 }
@@ -107,7 +106,7 @@ bool Namespace::IsTopLevel() const {
 }
 
 string Namespace::ConstructMapName(const string& identifier_name) const {
-  return StrCat(filename_, "/", identifier_name);
+  return thrax::StringCat(filename_, "/", identifier_name);
 }
 
 }  // namespace thrax

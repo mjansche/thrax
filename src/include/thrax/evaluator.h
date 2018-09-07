@@ -25,7 +25,6 @@
 #include <sstream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -93,8 +92,13 @@ class AstEvaluator : public AstWalker {
   // This constructor sets up the evaluator to run all nodes using a new
   // environment namespace.
   AstEvaluator()
-      : AstWalker(), env_(new Namespace()), id_counter_(NULL), run_all_(true),
-        return_value_(NULL), success_(true), optimize_embedding_(-1) {
+      : AstWalker(),
+        env_(new Namespace()),
+        id_counter_(nullptr),
+        run_all_(true),
+        return_value_(nullptr),
+        success_(true),
+        optimize_embedding_(-1) {
     // This primary namespace should be the one that corresponds to the main
     // file being compiled.
     env_->SetTopLevel();
@@ -108,8 +112,13 @@ class AstEvaluator : public AstWalker {
   // This constructor will only run import and function nodes, loading them into
   // the provided namespace.
   explicit AstEvaluator(Namespace* env)
-      : AstWalker(), env_(env), id_counter_(NULL), run_all_(false),
-        return_value_(NULL), success_(true), optimize_embedding_(-1) {}
+      : AstWalker(),
+        env_(env),
+        id_counter_(nullptr),
+        run_all_(false),
+        return_value_(nullptr),
+        success_(true),
+        optimize_embedding_(-1) {}
 
   virtual ~AstEvaluator() {
     // We only own the environment if we ran all of the nodes.  Similarly, if we
@@ -204,7 +213,7 @@ class AstEvaluator : public AstWalker {
     // Get (and check) the path of the actual source and far.
     const string& path = JoinPath(FLAGS_indir, node->GetPath()->Get());
     if (Suffix(path) != "grm") {
-      Error(*node, StrCat("Extension for included files should be .grm: ",
+      Error(*node, thrax::StringCat("Extension for included files should be .grm: ",
                                 path));
       return;
     }
@@ -212,7 +221,7 @@ class AstEvaluator : public AstWalker {
     // Get (and check) the alias name.
     const string& alias = node->GetAlias()->Get();
     if (alias.find('.') != string::npos) {
-      Error(*node, StrCat("Invalid import alias identifier: ", alias));
+      Error(*node, thrax::StringCat("Invalid import alias identifier: ", alias));
       return;
     }
 
@@ -222,7 +231,7 @@ class AstEvaluator : public AstWalker {
     // First load up the function source into the local environment.
     VLOG(2) << "Opening (and parsing) imported source file: " << path;
     if (!Readable(path)) {
-      Error(*node, StrCat("Unable to open grm source file: ", path));
+      Error(*node, thrax::StringCat("Unable to open grm source file: ", path));
       env_ = prev_env_;
       return;
     }
@@ -230,7 +239,7 @@ class AstEvaluator : public AstWalker {
     if (!grammar->ParseFile(path) ||
         !grammar->EvaluateAstWithEnvironment(env_, false)) {
       Error(*node,
-            StrCat("Errors while importing grm source file: ", path));
+            thrax::StringCat("Errors while importing grm source file: ", path));
       env_ = prev_env_;
       return;
     }
@@ -243,7 +252,7 @@ class AstEvaluator : public AstWalker {
     fst::FarReader<Arc>* far_reader =
         fst::STTableFarReader<Arc>::Open(far_path);
     if (!far_reader) {
-      Error(*node, StrCat("Unable to open far archive: ", far_path));
+      Error(*node, thrax::StringCat("Unable to open far archive: ", far_path));
       // We don't need to return or cleanup, as the next code will check for
       // Success() first, jumping to cleanup on failure.
     }
@@ -289,7 +298,7 @@ class AstEvaluator : public AstWalker {
 
     // Restore the previous namespace and kill the FAR reader.
     env_ = prev_env_;
-    delete far_reader;  // On error, this'll be NULL but the delete is safe.
+    delete far_reader;  // On error, this'll be nullptr but the delete is safe.
   }
 
   // Set the return_value_ pointer to the FST described by the FstNode.
@@ -297,7 +306,7 @@ class AstEvaluator : public AstWalker {
     VLOG(2) << "Visiting FstNode";
     if (!Success()) return;
 
-    CHECK(return_value_ == NULL);
+    CHECK(return_value_ == nullptr);
     return_value_ = MakeFst(node);
   }
 
@@ -323,7 +332,7 @@ class AstEvaluator : public AstWalker {
       std::cout << "Evaluating rule: " << identifier->Get() << std::endl;
     if (identifier->HasNamespaces()) {
       Error(*identifier,
-            StrCat("Cannot assign to an identifier within a namespace: ",
+            thrax::StringCat("Cannot assign to an identifier within a namespace: ",
                          identifier->Get()));
       return;
     }
@@ -335,7 +344,7 @@ class AstEvaluator : public AstWalker {
     // Insert the new variable, dying if it clobbers a pre-existing object.
     if (!env_->InsertLocal(name, thing)) {
       Error(*identifier,
-            StrCat("Cannot clobber existing variable: ", name));
+            thrax::StringCat("Cannot clobber existing variable: ", name));
       return;
     }
     if (node->ShouldExport()) {
@@ -343,7 +352,7 @@ class AstEvaluator : public AstWalker {
         exported_fsts_.insert(identifier);
       } else if (!FLAGS_always_export) {
         Error(*identifier,
-              StrCat("Variables may only be exported from the top-level "
+              thrax::StringCat("Variables may only be exported from the top-level "
                            "grammar: ",
                            name));
         return;
@@ -369,7 +378,7 @@ class AstEvaluator : public AstWalker {
     VLOG(2) << "Visiting StringNode";
     if (!Success()) return;
 
-    CHECK(return_value_ == NULL);
+    CHECK(return_value_ == nullptr);
     return_value_ = new DataType(node->Get());
   }
 
@@ -412,7 +421,7 @@ class AstEvaluator : public AstWalker {
       }
       VLOG(1) << "Expanding FST: " << name;
       if (!env_->Get<DataType>(**fst_i)->is<Transducer*>()) {
-        Error(**fst_i, StrCat("Cannot export non-FST variable: ",
+        Error(**fst_i, thrax::StringCat("Cannot export non-FST variable: ",
                                     (*fst_i)->Get()));
         return;
       }
@@ -433,7 +442,7 @@ class AstEvaluator : public AstWalker {
 
  private:
   // Extract and interpret the proper arguments from an FstNode and bind them to
-  // the DataType union.  On failure, we'll return NULL.
+  // the DataType union.  On failure, we'll return nullptr.
   std::vector<DataType*>* GetArgumentsFromFstNode(FstNode* node,
                                                   int num_arguments) {
     std::vector<DataType*>* args = new std::vector<DataType*>();
@@ -443,7 +452,7 @@ class AstEvaluator : public AstWalker {
       if (!return_value) {
         STLDeleteElements(args);
         delete args;
-        return NULL;
+        return nullptr;
       }
       args->push_back(return_value);
     }
@@ -459,7 +468,7 @@ class AstEvaluator : public AstWalker {
       if (!return_value) {
         STLDeleteElements(args);
         delete args;
-        return NULL;
+        return nullptr;
       }
       args->push_back(return_value);
     }
@@ -483,14 +492,14 @@ class AstEvaluator : public AstWalker {
     CollectionNode* fa_node = func_node->GetArguments();
     if (fa_node->Size() != arguments->size()) {
       Error(debug_location_node,
-            StrCat("Expected ", fa_node->Size(), " arguments but got ",
+            thrax::StringCat("Expected ", fa_node->Size(), " arguments but got ",
                          arguments->size()));
     }
     for (int i = 0; Success() && i < fa_node->Size(); ++i) {
       IdentifierNode* fa_identifier =
           static_cast<IdentifierNode*>((*fa_node)[i]);
       if (fa_identifier->HasNamespaces()) {
-        Error(*fa_identifier, StrCat("Invalid function argument: ",
+        Error(*fa_identifier, thrax::StringCat("Invalid function argument: ",
                                            fa_identifier->Get()));
         break;
       }
@@ -501,7 +510,7 @@ class AstEvaluator : public AstWalker {
 
     // Iterate over the statements and run each.
     CollectionNode* fb_node = func_node->GetBody();
-    DataType* output = NULL;
+    DataType* output = nullptr;
     for (int i = 0; Success() && i < fb_node->Size(); ++i) {
       StatementNode* stmt = static_cast<StatementNode*>((*fb_node)[i]);
       stmt->Accept(this);
@@ -531,7 +540,7 @@ class AstEvaluator : public AstWalker {
                             std::vector<DataType*>* arguments,
                             DataType** output) {
     function::Function<Arc>* func = GetFunction<Arc>(function_name);
-    if (!func)       // If we get a NULL function, then the name was invalid,
+    if (!func)       // If we get a nullptr function, then the name was invalid,
       return false;  // so we'll return false.
 
     *output = func->Run(arguments);
@@ -605,8 +614,8 @@ class AstEvaluator : public AstWalker {
         DataType* original = env_->Get<DataType>(*identifier);
         if (!original) {
           Error(*identifier,
-                StrCat("Undefined symbol: ", identifier->Get()));
-          return NULL;
+                thrax::StringCat("Undefined symbol: ", identifier->Get()));
+          return nullptr;
         }
         output = original->Copy();
 
@@ -657,16 +666,16 @@ class AstEvaluator : public AstWalker {
             static_cast<CollectionNode*>(node->GetArgument(1)));
         if (!Success() || !args) {
           Error(*func_identifier_node,
-                StrCat("Unable to bind all arguments for function call: ",
+                thrax::StringCat("Unable to bind all arguments for function call: ",
                              func_identifier_node->Get()));
-          return NULL;
+          return nullptr;
         }
 
         bool function_found = false;
         Namespace* func_namespace;
         FunctionNode* func_node =
             env_->Get<FunctionNode>(*func_identifier_node, &func_namespace);
-        output = NULL;
+        output = nullptr;
         if (func_node) {
           // Get the function and make sure the names match and then call the
           // function.
@@ -688,9 +697,9 @@ class AstEvaluator : public AstWalker {
 
         if (!function_found) {
           Error(*func_identifier_node,
-                StrCat("Undefined function identifier: ",
+                thrax::StringCat("Undefined function identifier: ",
                              func_identifier_node->Get()));
-          return NULL;
+          return nullptr;
         }
 
         // Now that we are done, set the optimize_embedding_ setting back to the
@@ -734,7 +743,7 @@ class AstEvaluator : public AstWalker {
   // Releases control of the return_value_ and returns it.
   DataType* GetReturnValue() {
     DataType* ret = return_value_;
-    return_value_ = NULL;
+    return_value_ = nullptr;
     return ret;
   }
 

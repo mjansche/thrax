@@ -20,7 +20,7 @@
 namespace thrax {
 
 StatementNode::StatementNode(StatementNodeType type)
-    : Node(), type_(type), statement_(NULL) {}
+    : Node(), type_(type), statement_(nullptr) {}
 
 StatementNode::~StatementNode() {
   delete statement_;

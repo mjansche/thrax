@@ -49,7 +49,7 @@ IdentifierNode::IdentifierNode(const string& name) : IdentifierNode(name, -1) {}
 
 IdentifierNode::IdentifierNode(const string& name, int begin_pos)
     : Node(), full_name_(name), begin_pos_(begin_pos) {
-  SplitStringAllowEmpty(full_name_, ".", &namespaces_);
+  namespaces_ = thrax::StringSplit(full_name_, '.');
   identifier_ = namespaces_.back();
   namespaces_.pop_back();
   valid_ = CalculateValidity();

@@ -10,11 +10,8 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
 // Implementation of DeletePointerClosure() and NewCallback() needed by
-// resource-map.h
+// resource-map.h.
 
 #ifndef THRAX_COMPAT_CLOSURE_H_
 #define THRAX_COMPAT_CLOSURE_H_
@@ -32,29 +29,30 @@ class TypedCallback : public Closure {
  public:
   TypedCallback(void(*function)(T* ptr), T* ptr) :
       function_(function), ptr_(ptr) { }
+
   void Run() {
     function_(ptr_);
     delete this;
   }
 
  private:
-  void(*function_)(T*);
-  T* ptr_;
+  void(*function_)(T *);
+  T *ptr_;
 };
 
 template <typename T>
-Closure* NewCallback(void(*function)(T* ptr), T* ptr) {
-  TypedCallback<T>* callback = new TypedCallback<T>(function, ptr);
+Closure *NewCallback(void(*function)(T *ptr), T *ptr) {
+  auto *callback = new TypedCallback<T>(function, ptr);
   return callback;
 }
 
 template <typename T>
-void DeletePointer(T* p) {
+void DeletePointer(T *p) {
   delete p;
 }
 
 template <typename T>
-Closure* DeletePointerClosure(T* p) {
+Closure *DeletePointerClosure(T *p) {
   return NewCallback(&DeletePointer<T>, p);
 }
 

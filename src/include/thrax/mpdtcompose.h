@@ -1,18 +1,3 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
 // Composes two FSTs together, where one is a multistack pushdown transducer
 // (nlp/fst/extensions/mpdt). The MPDT may be either be the first or second
 // transducer, as controlled by the fourth (string) argument to the
@@ -54,7 +39,6 @@
 #include <set>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/extensions/mpdt/compose.h>
 #include <fst/extensions/mpdt/mpdt.h>
@@ -77,40 +61,36 @@ class MPdtCompose : public Function<Arc> {
   typedef typename Arc::Label Label;
 
   MPdtCompose() {}
-  virtual ~MPdtCompose() {}
+  ~MPdtCompose() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     if (args.size() < 4 || args.size() > 6) {
       std::cout << "MPdtCompose: Expected 4-6 arguments but got " << args.size()
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
-
     if (!args[0]->is<Transducer*>()
         || !args[1]->is<Transducer*>()
         || !args[2]->is<Transducer*>()
         || !args[3]->is<Transducer*>()) {
       std::cout << "MPdtCompose: First four arguments should be FSTs"
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
     const Transducer* left = *args[0]->get<Transducer*>();
     const Transducer* right = *args[1]->get<Transducer*>();
-
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left->OutputSymbols(), right->InputSymbols())) {
         std::cout << "MPdtCompose: output symbol table of 1st argument "
                   << "does not match input symbol table of 2nd argument"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-
     MutableTransducer parens_transducer(**args[2]->get<Transducer*>());
     std::vector<std::pair<Label, Label> > parens;
     MakeParensPairVector(parens_transducer, &parens);
-
     MutableTransducer assignments_transducer(**args[3]->get<Transducer*>());
     std::vector<Label> assignments;
     MakeAssignmentsVector(assignments_transducer, parens, &assignments);
@@ -121,28 +101,27 @@ class MPdtCompose : public Function<Arc> {
     if (args.size() > 4) {
       if (!args[4]->is<string>()) {
         std::cout << "MPdtCompose: Expected string for argument 5" << std::endl;
-        return NULL;
+        return nullptr;
       }
       const string& mpdt_direction = *args[4]->get<string>();
       if (mpdt_direction != "left_mpdt" && mpdt_direction != "right_mpdt") {
         std::cout << "MPdtCompose: Expected"
                   << " 'left_mpdt' or 'right_mpdt' for argument 5" << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (mpdt_direction == "left_mpdt") left_mpdt = true;
     }
-
     bool delete_left = false, delete_right = false;
     if (args.size() == 6) {
       if (!args[5]->is<string>()) {
         std::cout << "MPdtCompose: Expected string for argument 6" << std::endl;
-        return NULL;
+        return nullptr;
       }
       const string& sort_mode = *args[5]->get<string>();
       if (sort_mode != "left" && sort_mode != "right" && sort_mode != "both") {
         std::cout << "MPdtCompose: Expected 'left', 'right', or 'both'"
                   << " for argument 6" << std::endl;
-        return NULL;
+        return nullptr;
       }
 
       if (sort_mode != "right") {
@@ -165,12 +144,10 @@ class MPdtCompose : public Function<Arc> {
     } else {
       fst::Compose(*left, *right, parens, assignments, output, opts);
     }
-
     if (delete_left)
       delete left;
     if (delete_right)
       delete right;
-
     return new DataType(output);
   }
 

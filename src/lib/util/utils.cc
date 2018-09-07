@@ -9,12 +9,6 @@
 // WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 // See the License for the specific language governing permissions and
 // limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
-// Simple implementation of StrCat, needed in various places.  This version
-// allows from 2 to 5 combinations of strings and ints.
 
 #include <thrax/compat/utils.h>
 
@@ -38,47 +32,56 @@
 
 namespace thrax {
 
-using std::string;
+// Operations on strings.
 
-string StrCat(const StringOrInt &s1, const StringOrInt &s2) {
-  return s1.Get() + s2.Get();
+namespace {
+
+// Computes size of joined string.
+size_t GetResultSize(const std::vector<string> &elements, size_t s_size) {
+  const auto lambda = [](size_t partial, const string &right) {
+      return partial + right.size();
+  };
+  return (std::accumulate(elements.begin(), elements.end(), 0, lambda) +
+          s_size * (elements.size() - 1));
 }
 
-string StrCat(const StringOrInt &s1,
-              const StringOrInt &s2,
-              const StringOrInt &s3) {
-  return s1.Get() + s2.Get() + s3.Get();
+}  // namespace
+
+// Joins a vector of strings on a given delimiter.
+string StringJoin(const std::vector<string> &elements, const string &delim) {
+  string result;
+  if (elements.empty()) return result;
+  size_t s_size = delim.size();
+  result.reserve(GetResultSize(elements, s_size));
+  auto it = elements.begin();
+  result.append(it->data(), it->size());
+  for (++it; it != elements.end(); ++it) {
+    result.append(delim.data(), s_size);
+    result.append(it->data(), it->size());
+  }
+  return result;
 }
 
-string StrCat(const StringOrInt &s1,
-              const StringOrInt &s2,
-              const StringOrInt &s3,
-              const StringOrInt &s4) {
-  return s1.Get() + s2.Get() + s3.Get() + s4.Get();
-}
-
-string StrCat(const StringOrInt &s1,
-              const StringOrInt &s2,
-              const StringOrInt &s3,
-              const StringOrInt &s4,
-              const StringOrInt &s5) {
-  return s1.Get() + s2.Get() + s3.Get() + s4.Get() + s5.Get();
-}
-
-string StringPrintf(const char *format, ...) {
-  va_list ap;
-  va_start(ap, format);
-  char buf[1024];
-  vsnprintf(buf, 1024, format, ap);
-  string retval(buf);
-  va_end(ap);
-  return retval;
+// Splits a string according to delimiter, skipping over consecutive
+// delimiters.
+std::vector<string> StringSplit(const string &full, const char *delim) {
+  size_t prev = 0;
+  size_t found = full.find_first_of(delim);
+  size_t size = found - prev;
+  std::vector<string> result;
+  if (size > 0) result.push_back(full.substr(prev, size));
+  while (found != string::npos) {
+    prev = found + 1;
+    found = full.find_first_of(delim, prev);
+    size = found - prev;
+    if (size > 0) result.push_back(full.substr(prev, size));
+  }
+  return result;
 }
 
 // Split a string according to the delimiters, including consecutive
 // delimiters as empty strings.
-
-void SplitStringAllowEmpty(const string &full, const char *delim,
+void StripSplitAllowEmpty(const string &full, const char *delim,
                            std::vector<string> *result) {
   size_t prev = 0;
   size_t found = full.find_first_of(delim);
@@ -90,22 +93,14 @@ void SplitStringAllowEmpty(const string &full, const char *delim,
   }
 }
 
-// Split a string according to the delimiters, skipping over
-// consecutive delimiters.
-
-std::vector<string> Split(const string &full, const char *delim) {
-  size_t prev = 0;
-  size_t found = full.find_first_of(delim);
-  size_t size = found - prev;
-  std::vector<string> result;
-  if (size > 0) result.push_back(full.substr(prev, size));
-  while (found != string::npos) {
-    prev = found + 1;
-    found = full.find_first_of(delim, prev);
-    size_t size = found - prev;
-    if (size > 0) result.push_back(full.substr(prev, size));
-   }
-  return result;
+string StringPrintf(const char *format, ...) {
+  va_list ap;
+  va_start(ap, format);
+  char buf[1024];
+  vsnprintf(buf, 1024, format, ap);
+  string retval(buf);
+  va_end(ap);
+  return retval;
 }
 
 // Operations on filenames.
@@ -172,7 +167,7 @@ void ReadFileToStringOrDie(const string &file, string *store) {
 
 bool RecursivelyCreateDir(const string &path) {
   if (path.empty()) return true;
-  std::vector<string> path_comp(Split(path, "/"));
+  std::vector<string> path_comp(StringSplit(path, "/"));
   if (path[0] == '/') path_comp[0] = "/" + path_comp[0];
   struct stat stat_buf;
   string rpath;

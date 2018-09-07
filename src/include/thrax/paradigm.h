@@ -1,20 +1,5 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
 // Various functions for building and maintaining inflectional paradigms, which
-// are equivalence classes of words that share morphological behavior.  Examples
+// are equivalence classes of words that share morphological behavior. Examples
 // of paradigms are the declensions of nouns and adjectives in Latin, which fall
 // into 5 basic paradigms defined by the endings used to mark case, number and
 // gender. Within each of these 5 classes there are many subclasses, paradigm
@@ -52,7 +37,6 @@
 
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/fstlib.h>
 #include <fst/string.h>
@@ -94,12 +78,11 @@ class Analyzer : public Function<Arc> {
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
 
-  Analyzer() : Function<Arc>() {}
-
-  virtual ~Analyzer() {}
+  Analyzer() {}
+  ~Analyzer() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     CHECK_EQ(args.size(), 4);
     MutableTransducer paradigm(**args[0]->get<Transducer*>());
     MutableTransducer stems(**args[1]->get<Transducer*>());
@@ -179,7 +162,7 @@ class Tagger : public Function<Arc> {
   virtual ~Tagger() {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     CHECK_EQ(args.size(), 5);
     MutableTransducer paradigm(**args[0]->get<Transducer*>());
     MutableTransducer stems(**args[1]->get<Transducer*>());
@@ -218,7 +201,7 @@ class Tagger : public Function<Arc> {
 // For example, one can define the replacement needed for "vir", "puer" (see
 // above) by redefining the nominative singular ending:
 //
-// decl2nomsgr =  sigma* "+" "__nom,sg";
+// decl2nomsgr = sigma* "+" "__nom,sg";
 //
 // Then one could do:
 //
@@ -230,12 +213,11 @@ class ParadigmReplace : public Function<Arc> {
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
 
-  ParadigmReplace() : Function<Arc>() {}
-
-  virtual ~ParadigmReplace() {}
+  ParadigmReplace() {}
+  ~ParadigmReplace() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     CHECK_EQ(args.size(), 3);
     MutableTransducer paradigm(**args[0]->get<Transducer*>());
     MutableTransducer old_forms(**args[1]->get<Transducer*>());

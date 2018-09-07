@@ -1,20 +1,4 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
-// Reads in a file of strings to be compiled into an fst
-// uses the speech/fst/prefix_tree functionality.
+// Reads in a file of strings to be compiled into an FST using a prefix tree.
 
 #ifndef THRAX_STRINGFILE_H_
 #define THRAX_STRINGFILE_H_
@@ -22,7 +6,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <thrax/compat/utils.h>
 #include <fst/fstlib.h>
@@ -33,7 +16,6 @@ using std::vector;
 #include <thrax/function.h>
 #include <thrax/symbols.h>
 #include <thrax/algo/prefix_tree.h>
-#include <thrax/compat/stlfunctions.h>
 
 DECLARE_bool(save_symbols);  // From util/flags.cc.
 DECLARE_string(indir);  // From util/flags.cc.
@@ -48,23 +30,23 @@ class StringFile : public Function<Arc> {
   typedef fst::PrefixTree<Arc> PrefixTree;
   typedef typename Arc::Label Label;
 
-  StringFile() : Function<Arc>() {}
-  virtual ~StringFile() {}
+  StringFile() {}
+  ~StringFile() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     if (args.size() < 1 || args.size() > 3) {
       std::cout << "StringFile: Expected 1-3 arguments but got " << args.size()
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
     if (!args[0]->is<string>()) {
       std::cout << "StringFile: Expected string (file) for argument 1"
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
-    int imode = fst::StringTokenType::BYTE;
-    const fst::SymbolTable* isymbols = NULL;
+    auto imode = fst::StringTokenType::BYTE;
+    const fst::SymbolTable *isymbols = nullptr;
     if (args.size() == 1) {
       // If the StringFile call doesn't specify a parse mode, but if
       // FLAGS_save_symbols is set, we should set the symbol table to byte
@@ -85,13 +67,13 @@ class StringFile : public Function<Arc> {
       } else {
         std::cout << "StringFile: Invalid parse mode or symbol table "
                   << "for input symbols" << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-    int omode = fst::StringTokenType::BYTE;
+    auto omode = fst::StringTokenType::BYTE;
     // If this is an acceptor then the output symbols are whatever the input
     // symbols are.
-    const fst::SymbolTable* osymbols = isymbols;
+    const fst::SymbolTable *osymbols = isymbols;
     if (args.size() > 2) {
       if (args[2]->is<string>()) {
         if (*args[2]->get<string>() == "utf8") {
@@ -107,25 +89,21 @@ class StringFile : public Function<Arc> {
       } else {
         std::cout << "StringFile: Invalid parse mode or symbol table "
                   << "for output symbols" << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-    const string& filename =
-        JoinPath(FLAGS_indir, *args[0]->get<string>());
-
-    File* fp = OpenOrDie(filename, "r");
+    const auto filename = JoinPath(FLAGS_indir,
+                                         *args[0]->get<string>());
+    auto *fp = OpenOrDie(filename, "r");
     PrefixTree pt;
     string line;
     int linenum = 0;
     bool acceptor = true;
-    for (InputBuffer ibuf(fp); ibuf.ReadLine(&line);
-         /* ReadLine() automatically increments */) {
+    for (InputBuffer ibuf(fp); ibuf.ReadLine(&line); ++linenum) {
       line = fst::StripCommentAndRemoveEscape(line);
-      std::vector<string> words =
-          Split(line, "\t");
+      std::vector<string> words = thrax::StringSplit(line, '\t');
       size_t size = words.size();
       if (size == 0) {
-        ++linenum;
         continue;
       }
       // TODO(rws): Add ability to include weights
@@ -144,12 +122,9 @@ class StringFile : public Function<Arc> {
       } else {
         std::cout << "StringFile: Possible ill-formed line " << linenum
                   << " in " << filename << std::endl;
-        continue;
       }
-      ++linenum;
     }
-
-    MutableTransducer* fst = new MutableTransducer();
+    auto *fst = new MutableTransducer();
     pt.ToFst(fst);
     if (acceptor) {
       fst::Project(fst, fst::PROJECT_INPUT);
@@ -160,7 +135,6 @@ class StringFile : public Function<Arc> {
     }
     fst::RmEpsilon(fst);
     fst::ArcSort(fst, arcsort_comparer_);
-
     if (FLAGS_save_symbols) {
       fst->SetInputSymbols(isymbols);
       fst->SetOutputSymbols(osymbols);
@@ -182,12 +156,17 @@ class StringFile : public Function<Arc> {
     } else if (token_type == fst::StringTokenType::UTF8) {
       return fst::UTF8StringToLabels(str, labels);
     } else {
-      char *c_str = new char[str.size() + 1];
+      auto *c_str = new char[str.size() + 1];
       str.copy(c_str, str.size());
-      c_str[str.size()] = 0;
+      c_str[str.size()] = '\0';
       std::vector<char *> vec;
-      string separator = "\n" + FLAGS_fst_field_separator;
-      fst::SplitToVector(c_str, separator.c_str(), &vec, true);
+      const string separator = "\n" + FLAGS_fst_field_separator;
+      const auto splits = thrax::StringSplit(c_str,
+         separator);
+      for (const auto &token : splits) {
+        vec.push_back(const_cast<char *>(token.data()));
+        vec.back()[token.size()] = '\0';
+      }
       for (size_t i = 0; i < vec.size(); ++i) {
         Label label;
         if (!ConvertSymbolToLabel(vec[i], &label, syms))
@@ -225,8 +204,6 @@ class StringFile : public Function<Arc> {
   }
 
   static const fst::ILabelCompare<Arc> arcsort_comparer_;
-
-  DISALLOW_COPY_AND_ASSIGN(StringFile<Arc>);
 };
 
 template <typename Arc>

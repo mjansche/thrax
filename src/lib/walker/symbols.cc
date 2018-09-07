@@ -1,21 +1,5 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/fstlib.h>
 #include <fst/string.h>
@@ -144,7 +128,7 @@ inline bool IsUnicodeSpaceOrControl(int c) {
 }
 
 SymbolTableBuilder::SymbolTableBuilder()
-  : byte_symbols_(NULL), utf8_symbols_(NULL) {}
+    : byte_symbols_(nullptr), utf8_symbols_(nullptr) {}
 
 SymbolTableBuilder::~SymbolTableBuilder() {
   delete byte_symbols_;
@@ -181,7 +165,7 @@ void SymbolTableBuilder::GenerateByteSymbolTable() {
       c_str[0] = static_cast<char>(c);
       c_str[1] = '\0';
     } else {
-      snprintf(c_str, 5, "0x%02x", c);
+      snprintf(c_str, sizeof(c_str), "0x%02x", c);
     }
     byte_symbols_->AddSymbol(string(c_str), c);
   }
@@ -198,7 +182,7 @@ void SymbolTableBuilder::GenerateUtf8SymbolTable() {
     if (fst::LabelsToUTF8String(labels, &utf8_label)) {
       if (IsUnicodeSpaceOrControl(c)) {
         char c_str[7];
-        snprintf(c_str, 7, "0x%04x", c);
+        snprintf(c_str, sizeof(c_str), "0x%04x", c);
         utf8_symbols_->AddSymbol(string(c_str), c);
       } else {
         utf8_symbols_->AddSymbol(utf8_label, c);

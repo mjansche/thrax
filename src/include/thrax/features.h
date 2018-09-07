@@ -1,20 +1,5 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
 // Represents features, categories (bundles of features), and feature vectors
-// (particular instantiations of categories) as FSTs.  While one could do all of
+// (particular instantiations of categories) as FSTs. While one could do all of
 // this without this module, it makes it easier since once one has defined
 // features, one no longer has to worry about specifying the order of the
 // feature values or of specifying all feature values.
@@ -103,7 +88,6 @@
 
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -137,17 +121,17 @@ class Feature : public Function<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
 
   Feature() : Function<Arc>() {}
-  virtual ~Feature() {}
+  ~Feature() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     CHECK_GE(args.size(), 2);
     enum fst::StringTokenType mode = fst::StringTokenType::BYTE;
-    const fst::SymbolTable* symtab = NULL;
+    const fst::SymbolTable* symtab = nullptr;
     // First argument is the name of the feature
     if (!args[0]->is<string>()) {
       std::cout << "Feature: First argument must be string" << std::endl;
-      return NULL;
+      return nullptr;
     }
     const string& feature_name = *args[0]->get<string>();
     std::vector<string> feature_values;
@@ -157,7 +141,7 @@ class Feature : public Function<Arc> {
       if (!args[i]->is<string>()) {
         std::cout << "Feature: All arguments except last must be strings (arg "
                   << i + 1 << ")" << std::endl;
-        return NULL;
+        return nullptr;
       }
       feature_values.push_back(*args[i]->get<string>());
     }
@@ -211,7 +195,7 @@ class Feature : public Function<Arc> {
         std::cout << "Failed to generate label for " << feature_value_pair
                   << std::endl;
         delete fst;
-        return NULL;
+        return nullptr;
       }
       fst->AddArc(s0, Arc(label, label, Arc::Weight::One(), s1));
     }
@@ -364,18 +348,18 @@ class Category : public Function<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
   typedef fst::Fst<Arc> Transducer;
 
-  Category() : Function<Arc>() {}
-  virtual ~Category() {}
+  Category() {}
+  ~Category() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     CHECK_GE(args.size(), 1);
     std::vector<std::pair<string, Transducer*> > features;
     for (int i = 0; i < args.size(); ++i) {
       if (!args[i]->is<Transducer*>()) {
         std::cout << "Category: All arguments must be Feature fsts (arg "
                   << i + 1 << ")" << std::endl;
-        return NULL;
+        return nullptr;
       }
       MutableTransducer* feature_fst =
           new MutableTransducer(**args[i]->get<Transducer*>());
@@ -430,14 +414,14 @@ class FeatureVector : public Function<Arc> {
   virtual ~FeatureVector() {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     // In the minimal case, there are no specifications in this FeatureVector,
     // in which case we just get back an acceptor equivalent to the Category.
     CHECK_GE(args.size(), 1);
     if (!args[0]->is<Transducer*>()) {
       std::cout << "FeatureVector: First argument must be a Category fst"
                 << std::endl;
-        return NULL;
+      return nullptr;
     }
     MutableTransducer* category_fst =
         static_cast<MutableTransducer*>(*args[0]->get<Transducer*>());
@@ -446,7 +430,7 @@ class FeatureVector : public Function<Arc> {
                                                    &features)) {
       std::cout << "FeatureVector: First argument must be a Category fst"
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
     // There should be no more feature value pairs than possible for this
     // category. Since the first argument is the category, and the category's
@@ -454,7 +438,7 @@ class FeatureVector : public Function<Arc> {
     // the right comparison
     if (args.size() > category_fst->NumStates()) {
       std::cout << "Too many feature/value pairs specified" << std::endl;
-      return NULL;
+      return nullptr;
     }
     const fst::SymbolTable* generated_symbols =
         StringFst<Arc>::GetLabelSymbolTable(false);
@@ -464,7 +448,7 @@ class FeatureVector : public Function<Arc> {
         std::cout << "Feature/value pairs must strings be of the form x=y"
                   << std::endl;
         delete generated_symbols;
-        return NULL;
+        return nullptr;
       }
       string featval = *args[i]->get<string>();
       string feature;
@@ -472,14 +456,14 @@ class FeatureVector : public Function<Arc> {
         std::cout << "Feature/value pairs must strings be of the form x=y: "
                   << featval << std::endl;
         delete generated_symbols;
-        return NULL;
+        return nullptr;
       }
       int64 label = generated_symbols->Find(featval);
       if (label == fst::SymbolTable::kNoSymbol) {
         std::cout << "Feature/value pair " << featval << " is not defined."
                   << std::endl;
         delete generated_symbols;
-        return NULL;
+        return nullptr;
       }
       std::map<string, int64>::iterator ix = feature_label_pairs.find(feature);
       if (ix == feature_label_pairs.end()) {
@@ -487,7 +471,7 @@ class FeatureVector : public Function<Arc> {
       } else {
         std::cout << "Duplicate value for feature: " << feature << std::endl;
         delete generated_symbols;
-        return NULL;
+        return nullptr;
       }
     }
     delete generated_symbols;

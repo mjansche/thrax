@@ -1,31 +1,11 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: allauzen@google.com (Cyril Allauzen)
-//         ttai@google.com (Terry Tai)
-//
 // This function does a cleaning up of an FST by determinizing and minimizing
-// it.  If it's a transducer, we'll encode the arcs beforehand.
-//
-// This code is taken from the Optimize() function in
-// nlp/fst_grammar/context_dependent_rewrite/context_dependent_rewrite.h.
+// it. If it's a transducer, we encode the arcs beforehand.
 
 #ifndef THRAX_OPTIMIZE_H_
 #define THRAX_OPTIMIZE_H_
 
 #include <iostream>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -49,10 +29,10 @@ class Optimize : public UnaryFstFunction<Arc> {
   typedef fst::VectorFst<Arc> MutableTransducer;
 
   Optimize() {}
-  virtual ~Optimize() {}
+  ~Optimize() final {}
 
   // This function is public since other functions sometimes like to call on
-  // this without having to go through the whole Function registration
+  // this without having to go through the whole function registration
   // rigmarole.
   static Transducer* ActuallyOptimize(const Transducer& fst,
                                       bool compute_props = false) {
@@ -69,12 +49,12 @@ class Optimize : public UnaryFstFunction<Arc> {
   }
 
  protected:
-  virtual Transducer* UnaryFstExecute(const Transducer& fst,
-                                      const std::vector<DataType*>& args) {
+  Transducer* UnaryFstExecute(const Transducer& fst,
+                              const std::vector<DataType*>& args) final {
     if (args.size() != 1) {
       std::cout << "Optimize: Expected 1 argument but got " << args.size()
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
 
     return ActuallyOptimize(fst);

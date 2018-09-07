@@ -1,4 +1,4 @@
-AC_INIT([Thrax], [1.2.4], [help@opengrm.org])
+AC_INIT([Thrax], [1.2.5], [help@opengrm.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror])
 AM_PROG_AR
 
@@ -34,21 +34,21 @@ AC_CHECK_TYPES([__gnu_cxx::slist<int>], [], [],
                [[#include <ext/slist>]])
 
 AC_ARG_ENABLE(
-	[bin],
-	[AS_HELP_STRING(
-		[--enable-bin],
-		[enable command-line binaries])],
-	[],
-	[enable_bin=yes])
+  [bin],
+  [AS_HELP_STRING(
+    [--enable-bin],
+    [enable command-line binaries])],
+  [],
+  [enable_bin=yes])
 AM_CONDITIONAL([HAVE_BIN], [test "x$enable_bin" != xno])
 
 AC_ARG_ENABLE(
-	[readline],
-	[AS_HELP_STRING(
-		[--enable-readline],
-		[enable readline functionality in rewrite-tester])],
-	[],
-	[enable_readline=no])
+  [readline],
+  [AS_HELP_STRING(
+    [--enable-readline],
+    [enable readline functionality in rewrite-tester])],
+  [],
+  [enable_readline=no])
 AM_CONDITIONAL([HAVE_READLINE], [test "x$enable_readline" != xno])
 
 AC_CHECK_HEADER([fst/fst.h], [],

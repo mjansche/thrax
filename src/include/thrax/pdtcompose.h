@@ -1,18 +1,3 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
 // Composes two FSTs together, where one is a pushdown transducer
 // (nlp/fst/extensions/pdt). The PDT may be either be the first or second
 // transducer, as controlled by the fourth (string) argument to the
@@ -46,7 +31,6 @@
 #include <set>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/pdt.h>
@@ -69,14 +53,14 @@ class PdtCompose : public Function<Arc> {
   typedef typename Arc::Label Label;
 
   PdtCompose() {}
-  virtual ~PdtCompose() {}
+  ~PdtCompose() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     if (args.size() < 3 || args.size() > 5) {
       std::cout << "PdtCompose: Expected 3-5 arguments but got " << args.size()
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
 
     if (!args[0]->is<Transducer*>()
@@ -84,54 +68,49 @@ class PdtCompose : public Function<Arc> {
         || !args[2]->is<Transducer*>()) {
       std::cout << "PdtCompose: First three arguments should be FSTs"
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
     const Transducer* left = *args[0]->get<Transducer*>();
     const Transducer* right = *args[1]->get<Transducer*>();
-
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left->OutputSymbols(), right->InputSymbols())) {
         std::cout << "PdtCompose: output symbol table of 1st argument "
                   << "does not match input symbol table of 2nd argument"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-
     MutableTransducer parens_transducer(**args[2]->get<Transducer*>());
     std::vector<std::pair<Label, Label> > parens;
     MakeParensPairVector(parens_transducer, &parens);
-
     bool left_pdt = false;
     if (args.size() > 3) {
       if (!args[3]->is<string>()) {
         std::cout << "PdtCompose: Expected string for argument 4" << std::endl;
-        return NULL;
+        return nullptr;
       }
       const string& pdt_direction = *args[3]->get<string>();
       if (pdt_direction != "left_pdt" && pdt_direction != "right_pdt") {
         std::cout
             << "PdtCompose: Expected 'left_pdt' or 'right_pdt' for argument 4"
             << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (pdt_direction == "left_pdt") left_pdt = true;
     }
-
     bool delete_left = false, delete_right = false;
     if (args.size() == 5) {
       if (!args[4]->is<string>()) {
         std::cout << "PdtCompose: Expected string for argument 5" << std::endl;
-        return NULL;
+        return nullptr;
       }
       const string& sort_mode = *args[4]->get<string>();
       if (sort_mode != "left" && sort_mode != "right" && sort_mode != "both") {
         std::cout
             << "PdtCompose: Expected 'left', 'right', or 'both' for argument 5"
             << std::endl;
-        return NULL;
+        return nullptr;
       }
-
       if (sort_mode != "right") {
         left = new fst::ArcSortFst<Arc, fst::OLabelCompare<Arc> >(
             *left, ocomp);
@@ -143,7 +122,6 @@ class PdtCompose : public Function<Arc> {
         delete_right = true;
       }
     }
-
     MutableTransducer* output = new MutableTransducer();
     fst::PdtComposeOptions opts = fst::PdtComposeOptions();
     opts.connect = false;
@@ -152,12 +130,10 @@ class PdtCompose : public Function<Arc> {
     } else {
       fst::Compose(*left, *right, parens, output, opts);
     }
-
     if (delete_left)
       delete left;
     if (delete_right)
       delete right;
-
     return new DataType(output);
   }
 

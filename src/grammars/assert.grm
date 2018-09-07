@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2005-2016 Google, Inc.
-# Author: rws@google.com (Richard Sproat)
-
 # Simple grammar to test the AssertEqual function. The first test should
 # succeed, but the second will fail when you compile this.
 

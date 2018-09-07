@@ -23,7 +23,6 @@
 #include <map>
 #include <set>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>

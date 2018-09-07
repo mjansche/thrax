@@ -1,20 +1,4 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: ttai@google.com (Terry Tai)
-//         rws@google.com (Richard Sproat)
-//
-// Takes the difference of two FSTs.  This function may expand the second of the
+// Takes the difference of two FSTs. This function may expand the second of the
 // FSTs so that it can be optimized (determinized and epsilon-removed) if
 // necessary.
 
@@ -24,7 +8,6 @@
 #include <iostream>
 #include <memory>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -54,18 +37,16 @@ class Difference : public BinaryFstFunction<Arc> {
   typedef fst::Fst<Arc> Transducer;
 
   Difference() {}
-  virtual ~Difference() {}
+  ~Difference() final {}
 
  protected:
-  virtual Transducer* BinaryFstExecute(const Transducer& left,
-                                       const Transducer& right,
-                                       const std::vector<DataType*>& args) {
+  Transducer* BinaryFstExecute(const Transducer& left, const Transducer& right,
+                               const std::vector<DataType*>& args) final {
     if (args.size() != 2) {
       std::cout << "Difference: Expected 2 arguments but got " << args.size()
                 << std::endl;
       return nullptr;
     }
-
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(left.InputSymbols(), right.InputSymbols())) {
         std::cout << "Difference: input symbol table of 1st argument "
@@ -80,13 +61,11 @@ class Difference : public BinaryFstFunction<Arc> {
         return nullptr;
       }
     }
-
     if (right.Properties(kRightInputProps, true) != kRightInputProps) {
       std::cout << "Difference: 2nd argument must be an unweighted acceptor"
                 << std::endl;
       return nullptr;
     }
-
     if (right.Properties(kRightOptimizationProps, false) ==
                          kRightOptimizationProps) {
       return new fst::DifferenceFst<Arc>(left, right);

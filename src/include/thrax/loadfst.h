@@ -1,20 +1,4 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: ttai@google.com (Terry Tai)
-//         rws@google.com (Richard Sproat)
-//
-// Loads up an FST from the provided filename.
+// Loads an FST from the provided filename.
 
 #ifndef THRAX_LOADFST_H_
 #define THRAX_LOADFST_H_
@@ -22,7 +6,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -43,31 +26,28 @@ class LoadFst : public Function<Arc> {
   typedef fst::Fst<Arc> Transducer;
 
   LoadFst() {}
-  virtual ~LoadFst() {}
+  ~LoadFst() final {}
 
  protected:
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     if (args.size() != 1) {
       std::cout << "LoadFst: Expected 1 argument but got " << args.size()
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
-
     if (!args[0]->is<string>()) {
       std::cout << "LoadFst: Expected string (path) for argument 1"
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
     const string& file = JoinPath(FLAGS_indir, *args[0]->get<string>());
-
     VLOG(2) << "Loading FST: " << file;
     Transducer* fst = Transducer::Read(file);
     if (!fst) {
       std::cout << "LoadFst: Failed to load FST from file: " << file
                 << std::endl;
-      return NULL;
+      return nullptr;
     }
-
     if (FLAGS_save_symbols) {
       if (!fst->InputSymbols()) {
         LOG(WARNING) << "LoadFst: FLAGS_save_symbols is set "
@@ -78,7 +58,6 @@ class LoadFst : public Function<Arc> {
                      << "but fst has no output symbols";
       }
     }
-
     return new DataType(fst);
   }
 

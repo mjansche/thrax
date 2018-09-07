@@ -1,19 +1,3 @@
-// Licensed under the Apache License, Version 2.0 (the "License");
-// you may not use this file except in compliance with the License.
-// You may obtain a copy of the License at
-//
-//     http://www.apache.org/licenses/LICENSE-2.0
-//
-// Unless required by applicable law or agreed to in writing, software
-// distributed under the License is distributed on an "AS IS" BASIS,
-// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-// See the License for the specific language governing permissions and
-// limitations under the License.
-//
-// Copyright 2005-2011 Google, Inc.
-// Author: ttai@google.com (Terry Tai)
-//         rws@google.com (Richard Sproat)
-//
 // Wrapper for the context dependent rewriter.  Arguments should be, in order,
 // 1.) The rewrite transducer (tau).
 // 2.) The left context acceptor (lambda).
@@ -31,7 +15,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -54,28 +37,26 @@ class CDRewrite : public Function<Arc> {
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
 
-  CDRewrite() : Function<Arc>() {}
-  virtual ~CDRewrite() {}
+  CDRewrite() {}
+  ~CDRewrite() final {}
 
-  virtual DataType* Execute(const std::vector<DataType*>& args) {
+  DataType* Execute(const std::vector<DataType*>& args) final {
     if (args.size() != 4 && args.size() != 6) {
       std::cout << "CDRewrite: Expected 4 or 6 arguments but received "
                 << args.size() << std::endl;
-      return NULL;
+      return nullptr;
     }
     for (int i = 0; i < 4; ++i) {
       if (!args[i]->is<Transducer*>()) {
         std::cout << "CDRewrite: Expect FST for argument " << i + 1
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-
     MutableTransducer tau(**args[0]->get<Transducer*>());
     MutableTransducer lambda(**args[1]->get<Transducer*>());
     MutableTransducer rho(**args[2]->get<Transducer*>());
     MutableTransducer sigma(**args[3]->get<Transducer*>());
-
     // All symbol tables for all transducers must match, and all input symbols
     // must match all output symbols. It makes no sense if they don't. So we
     // perform all these checks.
@@ -92,56 +73,55 @@ class CDRewrite : public Function<Arc> {
     // 3) Null out the symbol tables of all of the pieces, pass them in and then
     //    put the symbol table on the result when we are done. This seems the
     //    simplest and safest.
-    const fst::SymbolTable* symbols = NULL;
+    const fst::SymbolTable* symbols = nullptr;
     if (FLAGS_save_symbols) {
       if (!CompatSymbols(tau.InputSymbols(), tau.OutputSymbols())) {
         std::cout
             << "CDRewrite: input symbols and output symbols must match for tau"
             << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(lambda.InputSymbols(), lambda.OutputSymbols())) {
         std::cout << "CDRewrite: input symbols and output symbols must match "
                      "for lambda" << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(rho.InputSymbols(), rho.OutputSymbols())) {
         std::cout
             << "CDRewrite: input symbols and output symbols must match for rho"
             << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(sigma.InputSymbols(), sigma.OutputSymbols())) {
         std::cout << "CDRewrite: input symbols and output symbols must match "
                      "for sigma" << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(tau.InputSymbols(), lambda.InputSymbols())) {
         std::cout << "CDRewrite: symbol tables for tau and lambda must match"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(tau.InputSymbols(), rho.InputSymbols())) {
         std::cout << "CDRewrite: symbol tables for tau and rho must match"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
       if (!CompatSymbols(tau.InputSymbols(), sigma.InputSymbols())) {
         std::cout << "CDRewrite: symbol tables for tau and sigma must match"
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
       symbols = (*args[0]->get<Transducer*>())->InputSymbols();  // tau
-      tau.SetInputSymbols(NULL);
-      tau.SetOutputSymbols(NULL);
-      lambda.SetInputSymbols(NULL);
-      lambda.SetOutputSymbols(NULL);
-      rho.SetInputSymbols(NULL);
-      rho.SetOutputSymbols(NULL);
-      sigma.SetInputSymbols(NULL);
-      sigma.SetOutputSymbols(NULL);
+      tau.SetInputSymbols(nullptr);
+      tau.SetOutputSymbols(nullptr);
+      lambda.SetInputSymbols(nullptr);
+      lambda.SetOutputSymbols(nullptr);
+      rho.SetInputSymbols(nullptr);
+      rho.SetOutputSymbols(nullptr);
+      sigma.SetInputSymbols(nullptr);
+      sigma.SetOutputSymbols(nullptr);
     }
-
     fst::CDRewriteDirection dir = fst::LEFT_TO_RIGHT;
     fst::CDRewriteMode mode = fst::OBLIGATORY;
     if (args.size() == 6) {
@@ -149,10 +129,9 @@ class CDRewrite : public Function<Arc> {
         if (!args[i]->is<string>()) {
           std::cout << "CDRewrite: Expected string for argument " << i + 1
                     << std::endl;
-          return NULL;
+          return nullptr;
         }
       }
-
       const string& direction_str = *args[4]->get<string>();
       if (direction_str == "ltr") {
         dir = fst::LEFT_TO_RIGHT;
@@ -163,9 +142,8 @@ class CDRewrite : public Function<Arc> {
       } else {
         std::cout << "CDRewrite: Invalid direction: " << direction_str
                   << std::endl;
-        return NULL;
+        return nullptr;
       }
-
       const string& mode_str = *args[5]->get<string>();
       if (mode_str == "obl") {
         mode = fst::OBLIGATORY;
@@ -173,10 +151,9 @@ class CDRewrite : public Function<Arc> {
         mode = fst::OPTIONAL;
       } else {
         std::cout << "CDRewrite: Invalid mode: " << mode_str << std::endl;
-        return NULL;
+        return nullptr;
       }
     }
-
     MutableTransducer sigma_aug(sigma);
     MutableTransducer* output = new MutableTransducer();
     AddBoundaryMarkersToSigma(&sigma_aug);
@@ -217,8 +194,7 @@ class CDRewrite : public Function<Arc> {
 
   // Construct transducer that either inserts or deletes boundary markers.
   void HandleBoundaryMarkers(const Transducer& sigma,
-                             MutableTransducer* final,
-                             bool del) {
+                             MutableTransducer* final_fst, bool del) {
     MutableTransducer initial;
     typename Arc::StateId start = initial.AddState();
     typename Arc::StateId end = initial.AddState();
@@ -227,15 +203,15 @@ class CDRewrite : public Function<Arc> {
     initial.AddArc(start, Arc(del ? FLAGS_initial_boundary_marker : 0,
                               del ? 0 : FLAGS_initial_boundary_marker,
                               Arc::Weight::One(), end));
-    start = final->AddState();
-    end = final->AddState();
-    final->SetStart(start);
-    final->SetFinal(end, Arc::Weight::One());
-    final->AddArc(start, Arc(del ? FLAGS_final_boundary_marker : 0,
-                             del ? 0 : FLAGS_final_boundary_marker,
-                             Arc::Weight::One(), end));
+    start = final_fst->AddState();
+    end = final_fst->AddState();
+    final_fst->SetStart(start);
+    final_fst->SetFinal(end, Arc::Weight::One());
+    final_fst->AddArc(start, Arc(del ? FLAGS_final_boundary_marker : 0,
+                                 del ? 0 : FLAGS_final_boundary_marker,
+                                 Arc::Weight::One(), end));
     fst::Concat(&initial, sigma);
-    fst::Concat(initial, final);
+    fst::Concat(initial, final_fst);
     // Fixes bug whereby
     //
     // CDRewrite["" : "a", "", "", sigma_star]
@@ -271,20 +247,20 @@ class CDRewrite : public Function<Arc> {
         }
       }
       MutableTransducer final_del_sigma(initial_del_sigma);
-      fst::Concat(&initial_del_sigma, *final);
+      fst::Concat(&initial_del_sigma, *final_fst);
       fst::Concat(initial_del_sigma, &final_del_sigma);
-      *final = final_del_sigma;
+      *final_fst = final_del_sigma;
     }
   }
 
-  // Construct epsilon:initial sigma* epsilon:final
-  void BoundaryInserter(const Transducer& sigma, MutableTransducer* final) {
-    HandleBoundaryMarkers(sigma, final, false);
+  // Construct epsilon:initial sigma* epsilon:final_fst
+  void BoundaryInserter(const Transducer& sigma, MutableTransducer* final_fst) {
+    HandleBoundaryMarkers(sigma, final_fst, false);
   }
 
-  // Construct initial:epsilon sigma* final:epsilon
-  void BoundaryDeleter(const Transducer& sigma, MutableTransducer* final) {
-    HandleBoundaryMarkers(sigma, final, true);
+  // Construct initial:epsilon sigma* final_fst:epsilon
+  void BoundaryDeleter(const Transducer& sigma, MutableTransducer* final_fst) {
+    HandleBoundaryMarkers(sigma, final_fst, true);
   }
 
   DISALLOW_COPY_AND_ASSIGN(CDRewrite<Arc>);

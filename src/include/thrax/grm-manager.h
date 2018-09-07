@@ -32,6 +32,7 @@ namespace thrax {
 
 template <typename Arc>
 class GrmManagerSpec : public AbstractGrmManager<Arc> {
+  // `typedef` is used instead of `using` for SWIG compatibility.
   typedef AbstractGrmManager<Arc> Base;
   typedef std::map<string, const typename Base::Transducer*> FstMap;
 
@@ -53,16 +54,13 @@ class GrmManagerSpec : public AbstractGrmManager<Arc> {
 
 template <typename Arc>
 bool GrmManagerSpec<Arc>::LoadArchive(const string& filename) {
-  fst::FarReader<Arc>* reader =
-      fst::STTableFarReader<Arc>::Open(filename);
-  if (!reader) {
-    std::cout << "Unable to open FAR: " << filename;
-    delete reader;
+  std::unique_ptr<fst::FarReader<Arc>> reader(
+      fst::STTableFarReader<Arc>::Open(filename));
+  if (reader == nullptr) {
+    LOG(ERROR) << "Unable to open FAR: " << filename;
     return false;
   }
-  bool rc = Base::LoadArchive(reader);
-  delete reader;
-  return rc;
+  return Base::LoadArchive(reader.get());
 }
 
 template <typename Arc>

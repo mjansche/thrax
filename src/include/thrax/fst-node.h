@@ -22,7 +22,6 @@
 
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -70,7 +69,7 @@ class FstNode : public Node {
  protected:
   FstNodeType type_;
   std::vector<Node*> arguments_;
-  StringNode* weight_;  // NULL = default weight.
+  StringNode* weight_;  // nullptr = default weight.
   bool optimize_;
 
  private:

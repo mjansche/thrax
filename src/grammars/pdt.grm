@@ -10,9 +10,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-# Copyright 2005-2016 Google, Inc.
-# Author: rws@google.com (Richard Sproat)
-
 # Simple example of PDT grammar. Recognizes a^n b^n.
 # Test as follows:
 # thraxrewrite-tester --far=pdt.far --rules=PDT\$PARENS

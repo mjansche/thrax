@@ -1,6 +1,6 @@
 Thrax - Release 0.1
 
-This is the alpha version.
+(Alpha version.)
 
 Thrax - Release 1.0
 
@@ -38,7 +38,6 @@ Thrax - Release 1.1
 * Generated labels (enclosed in "[]") may no longer be single-character.
 * Allow ASSERT_EQUAL declarations in the grammar.
 
-
 Thrax - Release 1.2
 
 * Added interface to multi-pushdown transducer (MPDT) functionality from OpenFst.
@@ -74,3 +73,8 @@ Thrax - Release 1.2.4
 * Better error reporting for "cannot parse character" error.
 * Adds ":" as a bash-friendly alternative to "$" when specifying a
   (M)PDT/parens(/assignments) combination.
+
+Thrax - Release 1.2.5
+
+* Better use of finalization in the implementation of built-in methods.
+* Cleanup to string parsing.

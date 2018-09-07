@@ -20,7 +20,6 @@
 #include <iostream>
 #include <string>
 #include <vector>
-using std::vector;
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
@@ -41,7 +40,6 @@ using fst::VectorFst;
 using thrax::FstToStrings;
 using thrax::GetGeneratedSymbolTable;
 using thrax::GrmManagerSpec;
-using thrax::Split;
 typedef VectorFst<StdArc> Transducer;
 typedef StdArc::Label Label;
 
@@ -60,7 +58,7 @@ int main(int argc, char** argv) {
   GrmManagerSpec<StdArc> grm;
   CHECK(grm.LoadArchive(FLAGS_far));
   const SymbolTable* generated_symtab = GetGeneratedSymbolTable(&grm);
-  SymbolTable* output_symtab = NULL;
+  SymbolTable* output_symtab = nullptr;
   TokenType type;
   if (FLAGS_output_mode == "byte") {
     type = BYTE;
@@ -72,7 +70,7 @@ int main(int argc, char** argv) {
     CHECK(output_symtab)
         ;
   }
-  SymbolTable* input_symtab = NULL;
+  SymbolTable* input_symtab = nullptr;
   if (FLAGS_input_mode == "byte") {
     type = BYTE;
   } else if (FLAGS_input_mode == "utf8") {
@@ -87,8 +85,7 @@ int main(int argc, char** argv) {
     LOG(FATAL) << "--rule must be specified";
   const fst::Fst<StdArc>* fst = grm.GetFst(FLAGS_rule);
   if (!fst) {
-    LOG(FATAL) << "grm.GetFst() must be non NULL for rule: "
-               << FLAGS_rule;
+    LOG(FATAL) << "grm.GetFst() must be non nullptr for rule: " << FLAGS_rule;
   }
   // If the exported rule is not optimized, it may have final Infinite
   // costs. This can cause problems with randgen. RmEpsilon has the effect of

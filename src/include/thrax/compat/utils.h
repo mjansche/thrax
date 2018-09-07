@@ -10,10 +10,7 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 //
-// Copyright 2005-2011 Google, Inc.
-// Author: rws@google.com (Richard Sproat)
-//
-// Simple implementation of StrCat, needed in various places.  This version
+// Simple implementation of StrCat, needed in various places. This version
 // allows from 2 to 5 combinations of strings and ints.
 
 #ifndef THRAX_COMPAT_STRUTILS_H_
@@ -27,6 +24,7 @@
 #include <cstdarg>
 #include <cstdio>
 
+#include <algorithm>
 #include <fstream>
 #include <memory>
 #include <string>
@@ -34,9 +32,11 @@
 
 #include <fst/compat.h>
 
+using std::string;
+
 namespace thrax {
 
-using std::string;
+// Operations on strings.
 
 class StringOrInt {
  public:
@@ -56,45 +56,102 @@ class StringOrInt {
   string str_;
 };
 
-extern string StrCat(const StringOrInt &s1, const StringOrInt &s2);
+// TODO(kbg): Make this work with variadic template, maybe.
 
-extern string StrCat(const StringOrInt &s1,
-                     const StringOrInt &s2,
-                     const StringOrInt &s3);
+inline string StringCat(const StringOrInt &s1, const StringOrInt &s2) {
+  return s1.Get() + s2.Get();
+}
 
-extern string StrCat(const StringOrInt &s1,
-                     const StringOrInt &s2,
-                     const StringOrInt &s3,
-                     const StringOrInt &s4);
+inline string StringCat(const StringOrInt &s1,
+                        const StringOrInt &s2,
+                        const StringOrInt &s3) {
+  return s1.Get() + StringCat(s2, s3);
+}
 
-extern string StrCat(const StringOrInt &s1,
-                     const StringOrInt &s2,
-                     const StringOrInt &s3,
-                     const StringOrInt &s4,
-                     const StringOrInt &s5);
+inline string StringCat(const StringOrInt &s1,
+                        const StringOrInt &s2,
+                        const StringOrInt &s3,
+                        const StringOrInt &s4) {
+  return s1.Get() + StringCat(s2, s3, s4);
+}
 
-extern string StringPrintf(const char *format, ...);
+inline string StringCat(const StringOrInt &s1,
+                        const StringOrInt &s2,
+                        const StringOrInt &s3,
+                        const StringOrInt &s4,
+                        const StringOrInt &s5) {
+  return s1.Get() + StringCat(s2, s3, s4, s5);
+}
 
-extern void SplitStringAllowEmpty(const string &full, const char *delim,
-                                  std::vector<string> *result);
+namespace internal {
 
-extern std::vector<string> Split(const string &full, const char *delim);
+// Destructive variants.
 
-extern string JoinPath(const string &dirname, const string &basename);
+inline void StringReplace(string *full, const string &before,
+                          const string &after) {
+  size_t pos = 0;
+  while ((pos = full->find(before, pos)) != string::npos) {
+    full->replace(pos, before.size(), after);
+    pos += after.size();
+  }
+}
 
-extern const char *Suffix(const char *filename);
+inline void StripTrailingAsciiWhitespace(string *full) {
+  const auto lambda = [](char ch) { return !std::isspace(ch); };
+  const auto pos = std::find_if(full->rbegin(), full->rend(), lambda).base();
+  full->erase(pos, full->end());
+}
 
-extern const string Suffix(const string &filename);
+}  // namespace internal
 
-extern string StripBasename(const char *filename);
+inline string StringReplace(const string &full, const string &before,
+                            const string &after, bool /* ignored */) {
+  string copy(full);
+  internal::StringReplace(&copy, before, after);
+  return copy;
+}
 
-extern string StripBasename(const string &filename);
+inline string StripTrailingAsciiWhitespace(const string &full) {
+  string copy(full);
+  internal::StripTrailingAsciiWhitespace(&copy);
+  return copy;
+}
 
-extern bool Readable(const string &filename);
+string StringJoin(const std::vector<string> &elements, const string &delim);
 
-extern void ReadFileToStringOrDie(const string &filename, string *store);
+std::vector<string> StringSplit(const string &full, const char *delim);
 
-extern bool RecursivelyCreateDir(const string &path);
+inline std::vector<string> StringSplit(const string &full, char delim) {
+  return StringSplit(full, string(1, delim).c_str());
+}
+
+inline std::vector<string> StringSplit(const string &full,
+                                       const string &delim) {
+  return StringSplit(full, delim.c_str());
+}
+
+string StringPrintf(const char *format, ...);
+
+void SplitStringAllowEmpty(const string &full, const char *delim,
+                           std::vector<string> *result);
+
+// Operations on filenames.
+
+string JoinPath(const string &dirname, const string &basename);
+
+const char *Suffix(const char *filename);
+
+const string Suffix(const string &filename);
+
+string StripBasename(const char *filename);
+
+string StripBasename(const string &filename);
+
+bool Readable(const string &filename);
+
+void ReadFileToStringOrDie(const string &filename, string *store);
+
+bool RecursivelyCreateDir(const string &path);
 
 class File {
  public:
@@ -115,17 +172,17 @@ class File {
   std::unique_ptr<std::fstream> stream_;
 };
 
-// 2^14 --- should be enough for 1 line for the intended use
-
-#define MAXLINE 16384
+// 2^14 should be enough for 1 line for the intended use.
 
 class InputBuffer {
  public:
+  constexpr static int kMaxLine = 16384;
+
   explicit InputBuffer(File *fp) : fp_(fp) {}
 
   bool ReadLine(string *line) {
     line->clear();
-    fp_->Stream()->getline(buf_, MAXLINE);
+    fp_->Stream()->getline(buf_, kMaxLine);
     if (!fp_->Stream()->gcount()) {
       fp_.reset();
       return false;
@@ -136,7 +193,7 @@ class InputBuffer {
 
  private:
   std::unique_ptr<File> fp_;
-  char buf_[MAXLINE];
+  char buf_[kMaxLine];
 };
 
 File *Open(const string &filename, const string &mode);
