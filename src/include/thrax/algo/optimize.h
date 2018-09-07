@@ -94,7 +94,6 @@ void OptimizeAcceptor(MutableFst<Arc> *fst, bool compute_props = false) {
   // Combines identically labeled arcs with the same source and destination,
   // and sums their weights.
   ArcSumMap(fst);
-
   // If the FST is not (known to be) deterministic, determinize it.
   if (fst->Properties(kIDeterministic, compute_props) != kIDeterministic) {
     // If the FST is not known to have no weighted cycles, it is encoded
@@ -122,7 +121,6 @@ void OptimizeTransducer(MutableFst<Arc> *fst, bool compute_props = false) {
   // Combines identically labeled arcs with the same source and destination,
   // and sums their weights.
   ArcSumMap(fst);
-
   // The FST has non-idempotent weights; limiting optimization possibilities.
   if (fst->Properties(kIDeterministic, compute_props) != kIDeterministic) {
     // But "any acyclic weighted automaton over a zero-sum-free semiring has
