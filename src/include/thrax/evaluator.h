@@ -167,8 +167,8 @@ class AstEvaluator : public AstWalker {
       // compilers.
       bool new_add = env_->InsertWithoutDelete(name, node);
       observed_function_names_.insert(name);
-      CHECK(new_add)
-          ; // NOLINT
+      if (!new_add)
+        LOG(FATAL) << "Shadowing existing function: " << name;
     } else {
       if (observed_function_names_.find(name) !=
           observed_function_names_.end()) {
@@ -290,8 +290,10 @@ class AstEvaluator : public AstWalker {
           ReassignSymbols(&tmpfst);
           Transducer* fst = tmpfst.Copy();
           bool new_add = env_->Insert(key, new DataType(fst));
-          CHECK(new_add)
-              ; // NOLINT
+          if (!new_add)
+            LOG(FATAL) << "While loading " << path << " (aliased " << alias
+                       << ") from file " << prev_env_->GetFilename()
+                       << ", FST " << key << " was clobbered.";
         }
       }
     }

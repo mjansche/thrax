@@ -433,7 +433,7 @@ template <typename Arc>
 int64 StringFst<Arc>::next_label_ = FLAGS_generated_label_start_index;
 
 template <typename Arc>
-fst::Mutex StringFst<Arc>::map_mutex_;
+ fst::Mutex StringFst<Arc>::map_mutex_;
 
 }  // namespace function
 }  // namespace thrax

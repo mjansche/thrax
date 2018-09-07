@@ -124,8 +124,9 @@ class StringFile : public Function<Arc> {
         ConvertStringToLabels(words[1], &olabels, omode, osymbols);
         std::istringstream strm(words[2]);
         typename Arc::Weight weight;
-        CHECK(strm >> weight) 
-        ;  // NOLINT
+        if (!(strm >> weight))
+          LOG(FATAL) << "Ill-formed weight: " << words[2] << ", line "
+                     << linenum << " in " << filename;
         pt.Add(ilabels.begin(), ilabels.end(),
               olabels.begin(), olabels.end(),
               weight);

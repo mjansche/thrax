@@ -7,7 +7,7 @@
 // sequence, and total weight.
 //
 // The PathIterator class is agnostic about labels and symbol tables; the
-// StringPaths wrapper knows about this and also checks the input FST's
+// StringPathIterator wrapper knows about this and also checks the input FST's
 // properties (e.g., to make sure that it is acyclic).
 
 #include <memory>
@@ -31,7 +31,7 @@ constexpr int32 kNewState = -1;
 // labels, OLabels()---for output labels, and Weight().
 //
 // Note that PathIterator is symbol table and string-agnostic; consider using
-// StringPaths if you need either.
+// StringPathIterator if you need either.
 template <class Arc>
 class PathIterator {
  public:
@@ -68,6 +68,11 @@ class PathIterator {
   bool Done() const { return path_states_.empty(); }
 
  private:
+  // Inserts labels and weights from an arc.
+  void VisitArc(const Arc &arc);
+
+  void MaybePopLabels();
+
   // If initialization failed.
   bool error_;
   // Copy of FST being iterated over.
@@ -132,7 +137,7 @@ void PathIterator<Arc>::Next() {
   // to 0 and therefore start reading).
   StateId nextstate;
   while (!Done()) {
-    int32 offset = arc_iterator_offsets_.back() + 1;
+    const auto offset = arc_iterator_offsets_.back() + 1;
     arc_iterator_offsets_.pop_back();
     arc_iterator_offsets_.push_back(offset);
     ArcIterator<Fst<Arc>> aiter(*fst_, path_states_.back());
@@ -140,27 +145,17 @@ void PathIterator<Arc>::Next() {
     // If the arc iterator is done, then we are done at this state, and we move
     // back.
     if (aiter.Done()) {
+      MaybePopLabels();
       path_states_.pop_back();
-      if (pop_labels_) {
-        path_ilabels_.pop_back();
-        path_olabels_.pop_back();
-      }
-      pop_labels_ = true;
       path_weights_.pop_back();
       arc_iterator_offsets_.pop_back();
       // Otherwise we proceed moving to the current arc's next state, then break
       // out of this loop and attempt to move forward.
     } else {
       const auto &arc = aiter.Value();
-      if (pop_labels_) {
-        path_ilabels_.pop_back();
-        path_olabels_.pop_back();
-      }
-      pop_labels_ = true;
-      path_ilabels_.push_back(arc.ilabel);
-      path_olabels_.push_back(arc.olabel);
+      MaybePopLabels();
       path_weights_.pop_back();
-      path_weights_.push_back(arc.weight);
+      VisitArc(arc);
       nextstate = arc.nextstate;
       break;
     }
@@ -179,11 +174,9 @@ void PathIterator<Arc>::Next() {
         return;
       } else {
         const auto &arc = aiter.Value();
-        path_ilabels_.push_back(arc.ilabel);
-        path_olabels_.push_back(arc.olabel);
-        path_weights_.push_back(arc.weight);
-        arc_iterator_offsets_.push_back(0);
+        VisitArc(arc);
         nextstate = arc.nextstate;
+        arc_iterator_offsets_.push_back(0);
       }
     } else {
       // If we are at a final state, we act as if we have taken a transition to
@@ -202,10 +195,26 @@ void PathIterator<Arc>::Next() {
   }
 }
 
-// StringPaths is a wrapper for PathIterator that handles symbol tables, and
-// the conversion of the label sequences to strings.
 template <class Arc>
-class StringPaths {
+void PathIterator<Arc>::VisitArc(const Arc &arc) {
+  path_ilabels_.push_back(arc.ilabel);
+  path_olabels_.push_back(arc.olabel);
+  path_weights_.push_back(arc.weight);
+}
+
+template <class Arc>
+void PathIterator<Arc>::MaybePopLabels() {
+  if (pop_labels_) {
+    path_ilabels_.pop_back();
+    path_olabels_.pop_back();
+  }
+  pop_labels_ = true;
+}
+
+// StringPathIterator is a wrapper for PathIterator that handles symbol tables
+// and the conversion of the label sequences to strings.
+template <class Arc>
+class StringPathIterator {
  public:
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
@@ -215,30 +224,20 @@ class StringPaths {
   // lead to infinite loops and thus check_acyclic should only be false when the
   // caller can ensure finite iteration (e.g., knowing the FST is acyclic or
   // limiting the number of iterated paths).
-  explicit StringPaths(const Fst<Arc> &fst, StringTokenType itype = BYTE,
-                       StringTokenType otype = BYTE,
-                       const SymbolTable *isyms = nullptr,
-                       const SymbolTable *osyms = nullptr,
-                       bool rm_epsilon = true, bool check_acyclic = true);
+  explicit StringPathIterator(const Fst<Arc> &fst, StringTokenType itype = BYTE,
+                              StringTokenType otype = BYTE,
+                              const SymbolTable *isyms = nullptr,
+                              const SymbolTable *osyms = nullptr,
+                              bool check_acyclic = true);
 
   // The same, but sets input and output token types/symbol tables to the same
   // argument.
-  explicit StringPaths(const Fst<Arc> &fst, StringTokenType ttype,
-                       const SymbolTable *syms = nullptr,
-                       bool rm_epsilon = true, bool check_acyclic = true)
-      : StringPaths(fst, ttype, ttype, syms, syms, rm_epsilon, check_acyclic) {}
+  explicit StringPathIterator(const Fst<Arc> &fst, StringTokenType ttype,
+                              const SymbolTable *syms = nullptr,
+                              bool check_acyclic = true)
+      : StringPathIterator(fst, ttype, ttype, syms, syms, check_acyclic) {}
 
   bool Error() const { return error_ || iter_.Error(); }
-
-  // These return the underlying label sequences.
-
-  void ILabels(std::vector<Label> *labels) const;
-
-  std::vector<Label> ILabels() const;
-
-  void OLabels(std::vector<Label> *labels) const;
-
-  std::vector<Label> OLabels() const;
 
   ArcWeight Weight() const { return iter_.Weight(); }
 
@@ -257,19 +256,13 @@ class StringPaths {
   bool Done() const { return iter_.Done(); }
 
  private:
-  void Labels(bool output, std::vector<Label> *labels) const;
-
-  void MaybeRemoveEpsilonLabels(std::vector<Label> *labels) const {
-    if (rm_epsilon_) internal::RemoveEpsilonLabels(labels);
-  }
-
   PathIterator<Arc> iter_;
   StringTokenType itype_;
   StringTokenType otype_;
   const SymbolTable *isyms_;
   const SymbolTable *osyms_;
-  bool error_;
   bool rm_epsilon_;
+  bool error_;
 };
 
 // When check_acyclic is set, checks acyclicity of FST. An acyclic FST may
@@ -277,70 +270,49 @@ class StringPaths {
 // caller can ensure finite iteration (e.g., knowing the FST is acyclic or
 // limiting the number of iterated paths).
 template <class Arc>
-StringPaths<Arc>::StringPaths(const Fst<Arc> &fst, StringTokenType itype,
-                              StringTokenType otype, const SymbolTable *isyms,
-                              const SymbolTable *osyms, bool rm_epsilon,
-                              bool check_acyclic)
+StringPathIterator<Arc>::StringPathIterator(
+    const Fst<Arc> &fst, StringTokenType itype, StringTokenType otype,
+    const SymbolTable *isyms, const SymbolTable *osyms, bool check_acyclic)
     : iter_(fst, check_acyclic),
       itype_(itype),
       otype_(otype),
       isyms_(isyms),
       osyms_(osyms),
-      error_(false),
-      rm_epsilon_(rm_epsilon) {
+      error_(false) {
   // If the FST has its own symbol tables and symbol table use is requested,
   // we use those unless isyms or osyms is specified.
-  if (itype == StringTokenType::SYMBOL) {
-    if (!isyms_ && fst.InputSymbols()) {
-      isyms_ = fst.InputSymbols();
-    }
+  if (itype == StringTokenType::SYMBOL && !isyms_ && fst.InputSymbols()) {
+    isyms_ = fst.InputSymbols();
   }
-  if (otype == StringTokenType::SYMBOL) {
-    if (!osyms_ && fst.OutputSymbols()) {
-      osyms_ = fst.OutputSymbols();
-    }
+  if (otype == StringTokenType::SYMBOL && !osyms_ && fst.OutputSymbols()) {
+    osyms_ = fst.OutputSymbols();
   }
-  error_ = iter_.Error();
 }
 
 template <class Arc>
-void StringPaths<Arc>::ILabels(std::vector<typename Arc::Label> *labels) const {
-  *labels = iter_.ILabels();
-  MaybeRemoveEpsilonLabels(labels);
-}
-
-template <class Arc>
-void StringPaths<Arc>::OLabels(std::vector<typename Arc::Label> *labels) const {
-  *labels = iter_.OLabels();
-  MaybeRemoveEpsilonLabels(labels);
-}
-
-template <class Arc>
-void StringPaths<Arc>::IString(string *str) {
-  std::vector<Label> labels;
-  ILabels(&labels);
+void StringPathIterator<Arc>::IString(string *str) {
+  const auto &labels = iter_.ILabels();
   if (!internal::LabelsToString(labels, str, itype_, isyms_)) error_ = true;
 }
 
 template <class Arc>
-string StringPaths<Arc>::IString() {
+string StringPathIterator<Arc>::IString() {
   string result;
   IString(&result);
   return result;
 }
 
 template <class Arc>
-string StringPaths<Arc>::OString() {
-  string result;
-  OString(&result);
-  return result;
+void StringPathIterator<Arc>::OString(string *str) {
+  const auto &labels = iter_.OLabels();
+  if (!internal::LabelsToString(labels, str, otype_, osyms_)) error_ = true;
 }
 
 template <class Arc>
-void StringPaths<Arc>::OString(string *str) {
-  std::vector<Label> labels;
-  OLabels(&labels);
-  if (!internal::LabelsToString(labels, str, otype_, osyms_)) error_ = true;
+string StringPathIterator<Arc>::OString() {
+  string result;
+  OString(&result);
+  return result;
 }
 
 }  // namespace fst

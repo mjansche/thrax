@@ -5,17 +5,17 @@ Thrax - Release 0.1
 Thrax - Release 1.0
 
 * Removed dependency on ICU for UTF8 string parsing: --with-icu configuration
-  flag no longer needed and OpenFst library version 1.3.1 or above is required. 
+  flag no longer needed and OpenFst library version 1.3.1 or above is required.
 * Function definitions may now be interleaved with the rest of the body in grammars.
 * Support for standard (tropical), log and log64 arc types (flag --arc_type).
 * --save_symbols flag to thraxcompiler allows for symbol tables to be stored in the compiled fsts.
   thraxmakedep supports --arc_type and --save_symbols flags.
 * StringFile function now supports construction of both acceptors and
   transducers. Strings may be compiled in byte or utf8 mode, or with a
-  user-specified symbol table. 
+  user-specified symbol table.
 * The --rule flag to thraxrewrite-tester is now --rules. Supports a
   comma-separated list of rule names, which are to applied in sequence to the
-  input. 
+  input.
 * Project added as callable function.
 * Various optimizations to CDRewrite and elsewhere.
 * Fixed bug in how symbol tables are saved (1.0.1)
@@ -83,4 +83,10 @@ Thrax - Release 1.2.6
 
 * Adds an optional third column to stringfiles to represent weights.
 * Adds implementation of lenient composition.
-* Fixes some header issues that have popped up in recent versions of Debian. 
+* Fixes some header issues that have popped up in recent versions of Debian.
+
+Thrax - Release 1.2.7
+
+ * Adds some more useful debugging errors (e.g. when user tries to
+   reuse a namespace designator)
+

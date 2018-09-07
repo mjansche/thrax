@@ -74,51 +74,51 @@ class Oneof {
 
   explicit Oneof(const T1& thing) {
     thing_.t1_.Init(thing);
-    type_ = GetType(static_cast<T1*>(nullptr));
+    type_ = GetType(static_cast<T1 *>(nullptr));
   }
 
   explicit Oneof(const T2& thing) {
     thing_.t2_.Init(thing);
-    type_ = GetType(static_cast<T2*>(nullptr));
+    type_ = GetType(static_cast<T2 *>(nullptr));
   }
 
   explicit Oneof(const T3& thing) {
     thing_.t3_.Init(thing);
-    type_ = GetType(static_cast<T3*>(nullptr));
+    type_ = GetType(static_cast<T3 *>(nullptr));
   }
 
   explicit Oneof(const T4& thing) {
     thing_.t4_.Init(thing);
-    type_ = GetType(static_cast<T4*>(nullptr));
+    type_ = GetType(static_cast<T4 *>(nullptr));
   }
 
   explicit Oneof(const T5& thing) {
     thing_.t5_.Init(thing);
-    type_ = GetType(static_cast<T5*>(nullptr));
+    type_ = GetType(static_cast<T5 *>(nullptr));
   }
 
   explicit Oneof(const T6& thing) {
     thing_.t6_.Init(thing);
-    type_ = GetType(static_cast<T6*>(nullptr));
+    type_ = GetType(static_cast<T6 *>(nullptr));
   }
 
   ~Oneof() { Kill(); }
 
   template <class T>
   bool is() const {
-    return type_ == GetType(static_cast<T*>(nullptr));
+    return type_ == GetType(static_cast<T *>(nullptr));
   }
 
   template <class T>
-  const T* get() const {
-    T* dummy = nullptr;
+  const T *get() const {
+    T *dummy = nullptr;
     if (GetType(dummy) != type_) return nullptr;
     return get_internal(dummy)->get();
   }
 
   template <class T>
-  T* get_mutable() {
-    T* dummy = nullptr;
+  T *get_mutable() {
+    T *dummy = nullptr;
     if (GetType(dummy) != type_) return nullptr;
     return get_mutable_internal(dummy)->get();
   }

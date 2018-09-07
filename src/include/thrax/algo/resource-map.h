@@ -54,7 +54,7 @@ namespace thrax {
 class ResourceMap {
  private:
   struct Resource;
-  using Map = std::unordered_map<string, Resource *>;
+  using Map = std::unordered_map<string, Resource*>;
 
  public:
   ResourceMap() {}

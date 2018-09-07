@@ -67,8 +67,8 @@ int main(int argc, char** argv) {
   } else {
     type = SYMBOL;
     output_symtab = SymbolTable::ReadText(FLAGS_output_mode);
-    CHECK(output_symtab)
-        ;
+    if (!output_symtab)
+      LOG(FATAL) << "Invalid mode or symbol table path.";
   }
   SymbolTable* input_symtab = nullptr;
   if (FLAGS_input_mode == "byte") {
@@ -78,8 +78,8 @@ int main(int argc, char** argv) {
   } else {
     type = SYMBOL;
     input_symtab = SymbolTable::ReadText(FLAGS_input_mode);
-    CHECK(input_symtab)
-        ;
+    if (!input_symtab)
+      LOG(FATAL) << "Invalid mode or symbol table path.";
   }
   if (FLAGS_rule.empty())
     LOG(FATAL) << "--rule must be specified";

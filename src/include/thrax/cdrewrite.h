@@ -1,8 +1,8 @@
 // Wrapper for the context dependent rewriter.  Arguments should be, in order,
 // 1.) The rewrite transducer (tau).
-// 2.) The left context acceptor (lambda).
-// 3.) The right context acceptor (rho).
-// 4.) The minimized alphabet closure acceptor (sigma*).
+// 2.) The unweighted left context acceptor (lambda).
+// 3.) The unweighted right context acceptor (rho).
+// 4.) The unweighted alphabet closure acceptor (sigma*).
 // 5.) The string 'ltr', 'rtl', or 'sim' for the direction of rewrite. [opt]
 // 6.) The string 'obl' or 'opt' for the rewrite mode. [opt]
 //

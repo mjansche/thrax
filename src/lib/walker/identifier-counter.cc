@@ -89,8 +89,8 @@ int AstIdentifierCounter::GetCount(const string& identifier) {
 bool AstIdentifierCounter::Decrement(const string& identifier) {
   std::unordered_map<string, int>::iterator where =
       references_.find(identifier);
-  CHECK(where != references_.end())
-      ;
+  if (where == references_.end())
+    LOG(FATAL) << "Identifier " << identifier << " not found";
   if (where->second < 0)
     return true;
   if (where->second == 0)

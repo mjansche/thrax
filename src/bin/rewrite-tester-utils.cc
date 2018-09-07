@@ -13,6 +13,7 @@
 #include <../bin/utildefs.h>
 #include <../bin/rewrite-tester-utils.h>
 #include <thrax/symbols.h>
+#define HISTORY_FILE ".rewrite-tester-history"
 #ifdef HAVE_READLINE
 using thrax::File;
 using thrax::Open;
@@ -34,7 +35,7 @@ DEFINE_string(input_mode, "byte", "Either \"byte\", \"utf8\", or the path to a "
               "symbol table for input parsing.");
 DEFINE_string(output_mode, "byte", "Either \"byte\", \"utf8\", or the path to "
               "a symbol table for input parsing.");
-DEFINE_string(history_file, ".rewrite-tester-history",
+DEFINE_string(history_file, HISTORY_FILE,
               "Location of history file");
 DEFINE_int64(noutput, 1, "Maximum number of output strings for each input.");
 DEFINE_bool(show_details, false, "Show the output of each individual rule when"
@@ -46,6 +47,11 @@ using thrax::Open;
 static bool kHistoryFileInitialized = false;
 
 inline void InitializeHistoryFile() {
+  if (FLAGS_history_file.empty()) {
+    // Doesn't mean it succeeded: just means don't try this again:
+    kHistoryFileInitialized = true;
+    return;
+  }
   // Create history file if it doesn't exist
   if (!Open(FLAGS_history_file, "r")) {
     File* fp = Open(FLAGS_history_file, "w");
@@ -63,9 +69,11 @@ bool RewriteTesterUtils::ReadInput(string* s) {
   char* input = readline("Input string: ");
   if (!input) return false;
   s->assign(input);
-  add_history(input);
+  if (!FLAGS_history_file.empty())
+    add_history(input);
   free(input);
-  write_history(FLAGS_history_file.c_str());
+  if (!FLAGS_history_file.empty())
+    write_history(FLAGS_history_file.c_str());
   return true;
 }
 #else   // HAVE_READLINE
@@ -141,8 +149,8 @@ void RewriteTesterUtils::Initialize() {
     compiler_ = new Compiler(fst::StringTokenType::UTF8);
   } else {
     input_symtab_ = SymbolTable::ReadText(FLAGS_input_mode);
-    CHECK(input_symtab_)
-        ;   // NOLINT
+    if (!input_symtab_)
+      LOG(FATAL) << "Invalid mode or symbol table path.";
     compiler_ = new Compiler(fst::StringTokenType::SYMBOL, input_symtab_);
   }
 
@@ -154,8 +162,8 @@ void RewriteTesterUtils::Initialize() {
   } else {
     type_ = SYMBOL;
     output_symtab_ = SymbolTable::ReadText(FLAGS_output_mode);
-    CHECK(output_symtab_)
-        ;  // NOLINT
+    if (!output_symtab_)
+      LOG(FATAL) << "Invalid mode or symbol table path.";
   }
 }
 

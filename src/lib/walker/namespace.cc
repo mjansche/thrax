@@ -38,7 +38,7 @@ Namespace::Namespace(const string& filename, ResourceMap* resource_map)
 Namespace::~Namespace() {
   CHECK(local_env_.empty());
   STLDeleteContainerPairSecondPointers(alias_namespace_map_.begin(),
-                                       alias_namespace_map_.end());
+                                            alias_namespace_map_.end());
   if (owns_resources_)
     delete resources_;
 }
@@ -46,8 +46,9 @@ Namespace::~Namespace() {
 Namespace* Namespace::AddSubNamespace(const string& filename,
                                       const string& alias) {
   Namespace* new_namespace = new Namespace(filename, resources_);
-  CHECK(InsertIfNotPresent(&alias_namespace_map_, alias, new_namespace))
-      ;
+  if (!InsertIfNotPresent(&alias_namespace_map_, alias, new_namespace))
+    LOG(FATAL) << "Cannot reuse the same alias for two files: "
+               << alias << " in  " << filename;
   return new_namespace;
 }
 
