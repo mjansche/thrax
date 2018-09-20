@@ -155,64 +155,13 @@ class StringFile : public Function<Arc> {
   }
 
  private:
-  // Same functionality as in StringCompiler (nlp/fst), but that is private to
-  // the StringCompiler class
+  // Wrapper around internal functionality used by the OpenFst StringCompiler.
   bool ConvertStringToLabels(const string &str,
                              std::vector<Label> *labels,
-                             int token_type,
+                             fst::StringTokenType token_type,
                              const fst::SymbolTable* syms) const {
-    labels->clear();
-    if (token_type == fst::StringTokenType::BYTE) {
-      labels->reserve(str.size());
-      for (char ch : str) labels->push_back(ch);
-    } else if (token_type == fst::StringTokenType::UTF8) {
-      return fst::UTF8StringToLabels(str, labels);
-    } else {
-      auto *c_str = new char[str.size() + 1];
-      str.copy(c_str, str.size());
-      c_str[str.size()] = '\0';
-      std::vector<char *> vec;
-      const string separator = "\n" + FLAGS_fst_field_separator;
-      const auto splits = thrax::StringSplit(c_str,
-         separator);
-      for (const auto &token : splits) {
-        vec.push_back(const_cast<char *>(token.data()));
-        vec.back()[token.size()] = '\0';
-      }
-      for (size_t i = 0; i < vec.size(); ++i) {
-        Label label;
-        if (!ConvertSymbolToLabel(vec[i], &label, syms))
-          return false;
-        labels->push_back(label);
-      }
-      delete[] c_str;
-    }
-    return true;
-  }
-
-  // Similar replication of code from StringCompiler (nlp/fst)
-  bool ConvertSymbolToLabel(const char *s, Label* output,
-                            const fst::SymbolTable* syms) const {
-    int64 n;
-    if (syms) {
-      n = syms->Find(s);
-      if (n < 0) {
-        VLOG(1) << "StringFile:ConvertSymbolToLabel: Symbol \"" << s
-                << "\" is not mapped to any integer label, symbol table = "
-                << syms->Name();
-        return false;
-      }
-    } else {
-      char *p;
-      n = strtoll(s, &p, 10);
-      if (p < s + strlen(s) || n < 0) {
-        VLOG(1) << "StringFile::ConvertSymbolToLabel: Bad label integer "
-                << "= \"" << s << "\"";
-        return false;
-      }
-    }
-    *output = n;
-    return true;
+    return fst::internal::ConvertStringToLabels(
+        str, token_type, syms, fst::kNoLabel, false, labels);
   }
 
   static const fst::ILabelCompare<Arc> arcsort_comparer_;
