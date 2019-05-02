@@ -114,11 +114,7 @@ bool FstToStrings(const StdVectorFst &fst,
 const fst::SymbolTable *GetGeneratedSymbolTable(
     GrmManagerSpec<StdArc> *grm) {
   const auto *symbolfst = grm->GetFst("*StringFstSymbolTable");
-  if (symbolfst) {
-    StdVectorFst mutable_symbolfst(*symbolfst);
-    return mutable_symbolfst.InputSymbols()->Copy();
-  }
-  return nullptr;
+  return symbolfst ? symbolfst->InputSymbols()->Copy() : nullptr;
 }
 
 }  // namespace thrax

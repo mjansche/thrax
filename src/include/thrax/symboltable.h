@@ -13,7 +13,6 @@
 #include <fst/symbol-table.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
-#include <thrax/compat/stlfunctions.h>
 
 DECLARE_string(indir);  // From util/flags.cc.
 

@@ -1,8 +1,6 @@
 #ifndef FST_UTIL_OPERATORS_SIGMA_STAR_H_
 #define FST_UTIL_OPERATORS_SIGMA_STAR_H_
 
-#include <fst/compat.h>
-#include <thrax/compat/compat.h>
 #include <fst/fstlib.h>
 
 namespace fst {

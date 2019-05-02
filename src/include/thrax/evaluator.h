@@ -33,6 +33,7 @@
 #include <fst/concat.h>
 #include <fst/arc.h>
 #include <fst/fst.h>
+#include <fst/topsort.h>
 #include <fst/vector-fst.h>
 #include <fst/weight.h>
 #include <thrax/collection-node.h>
@@ -434,6 +435,12 @@ class AstEvaluator : public AstWalker {
       // reassign those tables, since we may have added generated labels. In the
       // worst case this is a no-op.
       ReassignSymbols(nfst);
+      // TopSort to address b/119868645.
+      //
+      // TODO(rws): The particular example in b/119868645 is evidently fixed by
+      // this, but this is not guaranteed to work in general since TopSort is a
+      // no-op on cyclic machines.
+      TopSort(nfst);
       (*fsts)[(*fst_i)->Get()] = nfst;
     }
   }

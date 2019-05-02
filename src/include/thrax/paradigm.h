@@ -116,6 +116,7 @@ class Analyzer : public Function<Arc> {
     MutableTransducer inflected;
     // Now compose with the set of stems to map from a given list of stems into
     // analyzed inflected forms.
+    fst::ArcSort(&mapper, fst::ILabelCompare<Arc>());
     fst::Compose(*stems, mapper, &inflected);
     // We only want the second dimension, namely analyzed inflected forms.
     fst::Project(&inflected, fst::PROJECT_OUTPUT);

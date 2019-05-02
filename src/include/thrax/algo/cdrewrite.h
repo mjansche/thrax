@@ -7,10 +7,9 @@
 #include <utility>
 #include <vector>
 
-#include <fst/compat.h>
-#include <thrax/compat/compat.h>
 #include <fst/types.h>
 #include <fst/fstlib.h>
+#include <thrax/algo/crossproduct.h>
 #include <thrax/algo/optimize.h>
 
 namespace fst {
@@ -34,7 +33,7 @@ template <class Arc>
 class CDRewriteRule {
  public:
   using Label = typename Arc::Label;
-
+  using Weight = typename Arc::Weight;
   // Creates object representing the context-dependent rewrite rule:
   //
   //   phi -> psi / lamba __ rho .
@@ -46,12 +45,16 @@ class CDRewriteRule {
   // weighted transducer when phiXpsi is true and a weighted acceptor
   // otherwise.
   CDRewriteRule(const Fst<Arc> &phi, const Fst<Arc> &psi,
-                const Fst<Arc> &lambda, const Fst<Arc> &rho, bool phiXpsi)
+                const Fst<Arc> &lambda, const Fst<Arc> &rho, bool phiXpsi,
+                Label initial_boundary_marker = kNoLabel,
+                Label final_boundary_marker = kNoLabel)
       : phi_(phi.Copy()),
         psi_(psi.Copy()),
         lambda_(lambda.Copy()),
         rho_(rho.Copy()),
-        phiXpsi_(phiXpsi) {}
+        phiXpsi_(phiXpsi),
+        initial_boundary_marker_(initial_boundary_marker),
+        final_boundary_marker_(final_boundary_marker) {}
 
   // Builds the transducer representing the context-dependent rewrite rule.
   // sigma is an FST specifying (the closure of) the alphabet for the resulting
@@ -94,6 +97,28 @@ class CDRewriteRule {
 
   static Label MaxLabel(const Fst<Arc> &fst);
 
+  // Constructs transducer that either inserts or deletes boundary markers.
+  void HandleBoundaryMarkers(const Fst<Arc>& sigma,
+                             VectorFst<Arc>* final_fst,
+                             bool del,
+                             bool add_initial_boundary_marker,
+                             bool add_final_boundary_marker);
+
+  // Constructs epsilon:initial sigma* epsilon:final_fst
+  void BoundaryInserter(const Fst<Arc>& sigma,
+                        VectorFst<Arc>* final_fst,
+                        bool add_initial_boundary_marker,
+                        bool add_final_boundary_marker);
+
+  // Constructs initial:epsilon sigma* final_fst:epsilon
+  void BoundaryDeleter(const Fst<Arc>& sigma,
+                       VectorFst<Arc>* final_fst,
+                       bool add_initial_boundary_marker,
+                       bool add_final_boundary_marker);
+
+  // Does the FST have this label on some arc?
+  static bool HasArcWithLabel(const Fst<Arc>& fst, Label label);
+
   std::unique_ptr<Fst<Arc>> phi_;
   std::unique_ptr<Fst<Arc>> psi_;
   std::unique_ptr<Fst<Arc>> lambda_;
@@ -104,12 +129,18 @@ class CDRewriteRule {
 
   // The following labels are used to represent the symbols: <_1, <_2 and > in
   // Mohri and Sproat. For instance, for left-to-right obligatory rules, <_1 is
-  // used to mark the start of an occurence of phi that need to be rewritten,
-  // <_2 is used to mark the start of an occurence of phi that should not be
-  // rewritten and > is used to mark the end of occurences of phi.
+  // used to mark the start of an occurrence of phi that need to be rewritten,
+  // <_2 is used to mark the start of an occurrence of phi that should not be
+  // rewritten and > is used to mark the end of occurrences of phi.
   Label lbrace1_;
   Label lbrace2_;
   Label rbrace_;
+
+  // The following labels are used in rules where we need to explicitly mark the
+  // beginning or end of a string. They should be set to kNoLabel whenever the
+  // corresponding boundary is not needed.
+  Label initial_boundary_marker_;
+  Label final_boundary_marker_;
 
   CDRewriteRule(const CDRewriteRule &) = delete;
   CDRewriteRule &operator=(const CDRewriteRule &) = delete;
@@ -135,21 +166,21 @@ void CDRewriteRule<Arc>::MakeMarker(
       if (num_states == 0) {
         *fst = sigma;
       } else {
-        for (StateId i = 0; i < num_states; ++i) {
-          if (fst->Final(i) == Weight::Zero()) {
-            fst->SetFinal(i, Weight::One());
+        for (StateId s = 0; s < num_states; ++s) {
+          if (fst->Final(s) == Weight::Zero()) {
+            fst->SetFinal(s, Weight::One());
           } else {
-            const auto j = fst->AddState();
-            fst->SetFinal(j, fst->Final(i));
-            for (ArcIterator<StdFst> aiter(*fst, i); !aiter.Done();
+            const auto i = fst->AddState();
+            fst->SetFinal(i, fst->Final(s));
+            for (ArcIterator<StdFst> aiter(*fst, s); !aiter.Done();
                  aiter.Next()) {
-              fst->AddArc(j, aiter.Value());
+              fst->AddArc(i, aiter.Value());
             }
-            fst->SetFinal(i, Weight::Zero());
-            fst->DeleteArcs(i);
-            for (size_t k = 0; k < markers.size(); ++k) {
-              fst->AddArc(i, StdArc(markers[k].first, markers[k].second,
-                                    Weight::One(), j));
+            fst->SetFinal(s, Weight::Zero());
+            fst->DeleteArcs(s);
+            for (const auto &marker : markers) {
+              fst->AddArc(
+                  s, StdArc(marker.first, marker.second, Weight::One(), i));
             }
           }
         }
@@ -160,13 +191,13 @@ void CDRewriteRule<Arc>::MakeMarker(
       if (num_states == 0) {
         *fst = sigma;
       } else {
-        for (StateId i = 0; i < num_states; ++i) {
-          if (fst->Final(i) == Weight::Zero()) {
-            fst->SetFinal(i, Weight::One());
+        for (StateId s = 0; s < num_states; ++s) {
+          if (fst->Final(s) == Weight::Zero()) {
+            fst->SetFinal(s, Weight::One());
           } else {
-            for (size_t k = 0; k < markers.size(); ++k) {
-              fst->AddArc(i, StdArc(markers[k].first, markers[k].second,
-                                    Weight::One(), i));
+            for (const auto &marker : markers) {
+              fst->AddArc(
+                  s, StdArc(marker.first, marker.second, Weight::One(), s));
             }
           }
         }
@@ -177,21 +208,21 @@ void CDRewriteRule<Arc>::MakeMarker(
       if (num_states == 0) {
         *fst = sigma;
         num_states = fst->NumStates();
-        for (StateId i = 0; i < num_states; ++i) {
-          if (fst->Final(i) != Weight::Zero()) {
-            for (size_t k = 0; k < markers.size(); ++k) {
-              fst->AddArc(i, StdArc(markers[k].first, markers[k].second,
-                                    Weight::One(), i));
+        for (StateId s = 0; s < num_states; ++s) {
+          if (fst->Final(s) != Weight::Zero()) {
+            for (const auto &marker : markers) {
+              fst->AddArc(
+                  s, StdArc(marker.first, marker.second, Weight::One(), s));
             }
           }
         }
       } else {
-        for (StateId i = 0; i < num_states; ++i) {
-          if (fst->Final(i) == Weight::Zero()) {
-            fst->SetFinal(i, Weight::One());
-            for (size_t k = 0; k < markers.size(); ++k) {
-              fst->AddArc(i, StdArc(markers[k].first, markers[k].second,
-                                    Weight::One(), i));
+        for (StateId s = 0; s < num_states; ++s) {
+          if (fst->Final(s) == Weight::Zero()) {
+            fst->SetFinal(s, Weight::One());
+            for (const auto &marker : markers) {
+              fst->AddArc(
+                  s, StdArc(marker.first, marker.second, Weight::One(), s));
             }
           }
         }
@@ -206,10 +237,11 @@ void CDRewriteRule<Arc>::MakeMarker(
 template <class Arc>
 void CDRewriteRule<Arc>::IgnoreMarkers(
     MutableFst<Arc> *fst, const std::vector<std::pair<Label, Label>> &markers) {
-  for (typename Arc::StateId i = 0; i < fst->NumStates(); ++i) {
-    for (size_t k = 0; k < markers.size(); ++k) {
-      fst->AddArc(i, Arc(markers[k].first, markers[k].second,
-                         Arc::Weight::One(), i));
+  for (StateIterator<MutableFst<Arc>> siter(*fst); !siter.Done();
+       siter.Next()) {
+    const auto s = siter.Value();
+    for (const auto &marker : markers) {
+      fst->AddArc(s, Arc(marker.first, marker.second, Arc::Weight::One(), s));
     }
   }
 }
@@ -219,11 +251,13 @@ template <class Arc>
 void CDRewriteRule<Arc>::AddMarkersToSigma(
     MutableFst<Arc> *sigma,
     const std::vector<std::pair<Label, Label>> &markers) {
-  for (typename Arc::StateId s = 0; s < sigma->NumStates(); ++s) {
+  for (StateIterator<MutableFst<Arc>> siter(*sigma); !siter.Done();
+       siter.Next()) {
+    const auto s = siter.Value();
     if (sigma->Final(s) != Arc::Weight::Zero()) {
-      for (size_t k = 0; k < markers.size(); ++k) {
-        sigma->AddArc(s, Arc(markers[k].first, markers[k].second,
-                             Arc::Weight::One(), sigma->Start()));
+      for (const auto &marker : markers) {
+        sigma->AddArc(s, Arc(marker.first, marker.second, Arc::Weight::One(),
+                             sigma->Start()));
       }
     }
   }
@@ -249,9 +283,9 @@ void CDRewriteRule<Arc>::AppendMarkers(
   const auto final_state = temp_fst.AddState();
   temp_fst.SetStart(start_state);
   temp_fst.SetFinal(final_state, Weight::One());
-  for (size_t k = 0; k < markers.size(); ++k) {
-    temp_fst.AddArc(start_state, Arc(markers[k].first, markers[k].second,
-                                     Weight::One(), final_state));
+  for (const auto &marker : markers) {
+    temp_fst.AddArc(start_state, Arc(marker.first, marker.second, Weight::One(),
+                                     final_state));
   }
   Concat(fst, temp_fst);
 }
@@ -265,9 +299,9 @@ void CDRewriteRule<Arc>::PrependMarkers(
   const auto new_start = fst->AddState();
   const auto old_start = fst->Start();
   fst->SetStart(new_start);
-  for (size_t k = 0; k < markers.size(); ++k) {
-    fst->AddArc(new_start, Arc(markers[k].first, markers[k].second,
-                               Arc::Weight::One(), old_start));
+  for (const auto &marker : markers) {
+    fst->AddArc(new_start, Arc(marker.first, marker.second, Arc::Weight::One(),
+                               old_start));
   }
 }
 
@@ -323,7 +357,6 @@ void CDRewriteRule<Arc>::MakeFilter(
 template <class Arc>
 void CDRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
                                      const Fst<Arc> &sigma) {
-  using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   Optimize(fst);
   if (fst->Start() == kNoStateId) fst->SetStart(fst->AddState());
@@ -383,17 +416,18 @@ void CDRewriteRule<Arc>::MakeReplace(MutableFst<Arc> *fst,
   // Adds loops at all states.
   IgnoreMarkers(fst, all_loops);
   // Creates new initial and final states.
-  const auto num_states = fst->NumStates();
   const auto start_state = fst->AddState();
   const auto final_state = fst->AddState();
   fst->AddArc(start_state, Arc(initial_pair.first, initial_pair.second,
                                Weight::One(), fst->Start()));
   // Makes all final states non final with transition to new final state.
-  for (StateId i = 0; i < num_states; ++i) {
-    if (fst->Final(i) == Weight::Zero()) continue;
-    fst->AddArc(i, Arc(final_pair.first, final_pair.second, fst->Final(i),
+  for (StateIterator<MutableFst<Arc>> siter(*fst); !siter.Done();
+       siter.Next()) {
+    const auto s = siter.Value();
+    if (fst->Final(s) == Weight::Zero()) continue;
+    fst->AddArc(s, Arc(final_pair.first, final_pair.second, fst->Final(s),
                        final_state));
-    fst->SetFinal(i, Weight::Zero());
+    fst->SetFinal(s, Weight::Zero());
   }
   fst->SetFinal(final_state, Weight::One());
   fst->SetFinal(start_state, Weight::One());
@@ -463,28 +497,42 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
     fst->SetProperties(kError, kError);
     return;
   }
-  rbrace_ = MaxLabel(sigma) + 1;
+  VectorFst<Arc> mutable_sigma(sigma);
+  // Determines whether we have initial and final boundaries and whether we need
+  // to add them to sigma. The markers can be referenced in phi or in,
+  // respectively, lambda or rho.
+  bool add_initial_boundary_marker =
+      HasArcWithLabel(*lambda_, initial_boundary_marker_) ||
+      HasArcWithLabel(*phi_, initial_boundary_marker_);
+  bool add_final_boundary_marker =
+      HasArcWithLabel(*rho_, final_boundary_marker_) ||
+      HasArcWithLabel(*phi_, final_boundary_marker_);
+  if (add_initial_boundary_marker) {
+    AddMarkersToSigma(&mutable_sigma, {{initial_boundary_marker_,
+                                        initial_boundary_marker_}});
+  }
+  if (add_final_boundary_marker) {
+    AddMarkersToSigma(&mutable_sigma, {{final_boundary_marker_,
+                                        final_boundary_marker_}});
+  }
+  rbrace_ = MaxLabel(mutable_sigma) + 1;
   lbrace1_ = rbrace_ + 1;
   lbrace2_ = rbrace_ + 2;
-  VectorFst<Arc> sigma_rbrace(sigma);
+  VectorFst<Arc> sigma_rbrace(mutable_sigma);
   AddMarkersToSigma(&sigma_rbrace, {{rbrace_, rbrace_}});
   fst->DeleteStates();
   VectorFst<Arc> replace;
   if (phiXpsi_) {
     ArcMap(*psi_, &replace, IdentityMapper<Arc>());
   } else {
-    Compose(ArcMapFst<Arc, Arc, OutputEpsilonMapper<Arc>>(
-                *phi_, OutputEpsilonMapper<Arc>()),
-            ArcMapFst<Arc, Arc, InputEpsilonMapper<Arc>>(
-                *psi_, InputEpsilonMapper<Arc>()),
-            &replace);
+    CrossProduct<Arc>(*phi_, *psi_, &replace);
   }
-  MakeReplace(&replace, sigma);
+  MakeReplace(&replace, mutable_sigma);
   switch (dir_) {
     case LEFT_TO_RIGHT: {
       // Builds r filter.
       VectorFst<Arc> r;
-      MakeFilter(*rho_, sigma, &r, MARK, {{0, rbrace_}}, true);
+      MakeFilter(*rho_, mutable_sigma, &r, MARK, {{0, rbrace_}}, true);
       switch (mode_) {
         case OBLIGATORY: {
           VectorFst<Arc> phi_rbrace;  // Appends > after phi_, matches all >.
@@ -497,13 +545,14 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
                      {{0, lbrace1_}, {0, lbrace2_}}, true);
           // Builds l1 filter.
           VectorFst<Arc> l1;
-          MakeFilter(*lambda_, sigma, &l1, CHECK, {{lbrace1_, 0}}, false);
+          MakeFilter(*lambda_, mutable_sigma, &l1, CHECK, {{lbrace1_, 0}},
+                     false);
           IgnoreMarkers(&l1, {{lbrace2_, lbrace2_}});
           ArcSort(&l1, ILabelCompare<Arc>());
           // Builds l2 filter.
           VectorFst<Arc> l2;
-          MakeFilter(*lambda_, sigma, &l2, CHECK_COMPLEMENT, {{lbrace2_, 0}},
-                     false);
+          MakeFilter(*lambda_, mutable_sigma, &l2, CHECK_COMPLEMENT,
+                     {{lbrace2_, 0}}, false);
           // Builds (((r o f) o replace) o l1) o l2.
           VectorFst<Arc> c;
           Compose(r, f, &c);
@@ -515,7 +564,8 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
         case OPTIONAL: {
           // Builds l filter.
           VectorFst<Arc> l;
-          MakeFilter(*lambda_, sigma, &l, CHECK, {{lbrace1_, 0}}, false);
+          MakeFilter(*lambda_, mutable_sigma, &l, CHECK, {{lbrace1_, 0}},
+                     false);
           // Builds (r o replace) o l.
           VectorFst<Arc> c;
           Compose(r, replace, &c);
@@ -528,7 +578,7 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
     case RIGHT_TO_LEFT: {
       // Builds l filter.
       VectorFst<Arc> l;
-      MakeFilter(*lambda_, sigma, &l, MARK, {{0, rbrace_}}, false);
+      MakeFilter(*lambda_, mutable_sigma, &l, MARK, {{0, rbrace_}}, false);
       switch (mode_) {
         case OBLIGATORY: {
           VectorFst<Arc> rbrace_phi;  // Prepends > before phi, matches all >
@@ -541,12 +591,13 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
                      {{0, lbrace1_}, {0, lbrace2_}}, false);
           // Builds r1 filter.
           VectorFst<Arc> r1;
-          MakeFilter(*rho_, sigma, &r1, CHECK, {{lbrace1_, 0}}, true);
+          MakeFilter(*rho_, mutable_sigma, &r1, CHECK, {{lbrace1_, 0}}, true);
           IgnoreMarkers(&r1, {{lbrace2_, lbrace2_}});
           ArcSort(&r1, ILabelCompare<Arc>());
           // Builds r2 filter.
           VectorFst<Arc> r2;
-          MakeFilter(*rho_, sigma, &r2, CHECK_COMPLEMENT, {{lbrace2_, 0}},
+          MakeFilter(*rho_, mutable_sigma, &r2, CHECK_COMPLEMENT,
+                     {{lbrace2_, 0}},
                      true);
           // Builds (((l o f) o replace) o r1) o r2.
           VectorFst<Arc> c;
@@ -559,7 +610,7 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
         case OPTIONAL: {
           // Builds r filter.
           VectorFst<Arc> r;
-          MakeFilter(*rho_, sigma, &r, CHECK, {{lbrace1_, 0}}, true);
+          MakeFilter(*rho_, mutable_sigma, &r, CHECK, {{lbrace1_, 0}}, true);
           // Builds (l o replace) o r.
           VectorFst<Arc> c;
           Compose(l, replace, &c);
@@ -572,7 +623,7 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
     case SIMULTANEOUS: {
       // Builds r filter.
       VectorFst<Arc> r;
-      MakeFilter(*rho_, sigma, &r, MARK, {{0, rbrace_}}, true);
+      MakeFilter(*rho_, mutable_sigma, &r, MARK, {{0, rbrace_}}, true);
       switch (mode_) {
         case OBLIGATORY: {
           VectorFst<Arc> phi_rbrace;  // Appends > after phi, matches all >.
@@ -585,13 +636,13 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
                      {{0, lbrace1_}, {0, lbrace2_}}, true);
           // Builds l1 filter.
           VectorFst<Arc> l1;
-          MakeFilter(*lambda_, sigma, &l1, CHECK, {{lbrace1_, lbrace1_}},
-                     false);
+          MakeFilter(*lambda_, mutable_sigma, &l1, CHECK,
+                     {{lbrace1_, lbrace1_}}, false);
           IgnoreMarkers(&l1, {{lbrace2_, lbrace2_}, {rbrace_, rbrace_}});
           ArcSort(&l1, ILabelCompare<Arc>());
           // Builds l2 filter.
           VectorFst<Arc> l2;
-          MakeFilter(*lambda_, sigma, &l2, CHECK_COMPLEMENT,
+          MakeFilter(*lambda_, mutable_sigma, &l2, CHECK_COMPLEMENT,
                      {{lbrace2_, lbrace2_}}, false);
           IgnoreMarkers(&l2, {{lbrace1_, lbrace1_}, {rbrace_, rbrace_}});
           ArcSort(&l2, ILabelCompare<Arc>());
@@ -606,7 +657,8 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
         case OPTIONAL: {
           // Builds l filter.
           VectorFst<Arc> l;
-          MakeFilter(*lambda_, sigma, &l, CHECK, {{0, lbrace1_}}, false);
+          MakeFilter(*lambda_, mutable_sigma, &l, CHECK, {{0, lbrace1_}},
+                     false);
           IgnoreMarkers(&l, {{rbrace_, rbrace_}});
           ArcSort(&l, ILabelCompare<Arc>());
           // Builds (r o l) o replace.
@@ -619,8 +671,151 @@ void CDRewriteRule<Arc>::Compile(const Fst<Arc> &sigma, MutableFst<Arc> *fst,
       break;
     }
   }
+  // If we need to handle boundary markers we do an extra composition of the
+  // boundary inserter and boundary deleter.
+  if (add_initial_boundary_marker || add_final_boundary_marker) {
+    VectorFst<Arc> inserter;
+    BoundaryInserter(sigma, &inserter,
+                     add_initial_boundary_marker, add_final_boundary_marker);
+    VectorFst<Arc> deleter;
+    BoundaryDeleter(sigma, &deleter,
+                    add_initial_boundary_marker, add_final_boundary_marker);
+    VectorFst<Arc> tmp;
+    ArcSort(fst, ILabelCompare<Arc>());
+    Compose(inserter, *fst, &tmp);
+    ArcSort(&tmp, OLabelCompare<Arc>());
+    Compose(tmp, deleter, fst);
+  }
   Optimize(fst);
   ArcSort(fst, ILabelCompare<Arc>());
+}
+
+
+template <class Arc>
+void CDRewriteRule<Arc>::HandleBoundaryMarkers(const Fst<Arc>& sigma,
+                                               VectorFst<Arc>* final_fst,
+                                               bool del,
+                                               bool add_initial_boundary_marker,
+                                               bool add_final_boundary_marker) {
+  VectorFst<Arc> initial;
+  auto start = initial.AddState();
+  initial.SetStart(start);
+  if (add_initial_boundary_marker) {
+    const auto end = initial.AddState();
+    initial.SetFinal(end, Weight::One());
+    initial.AddArc(start, Arc(del ? initial_boundary_marker_ : 0,
+                              del ? 0 : initial_boundary_marker_,
+                              Weight::One(), end));
+  } else {
+    initial.SetFinal(start, Weight::One());
+  }
+  start = final_fst->AddState();
+  final_fst->SetStart(start);
+  if (add_final_boundary_marker) {
+    const auto end = final_fst->AddState();
+    final_fst->SetFinal(end, Weight::One());
+    final_fst->AddArc(start, Arc(del ? final_boundary_marker_ : 0,
+                                 del ? 0 : final_boundary_marker_,
+                                 Weight::One(), end));
+  } else {
+    final_fst->SetFinal(start, Weight::One());
+  }
+  Concat(&initial, sigma);
+  Concat(initial, final_fst);
+  // Fixes bug whereby
+  //
+  // CDRewrite["" : "a", "", "", sigma_star]
+  //
+  // produces no output ("rewrite failed") because the rule inserts an "a"
+  // before the "[BOS]" and after the "[EOS]", in addition to anywhere in the
+  // input string. The output filter "[BOS] sigma_star [EOS]" blocks these, so
+  // that in an obligatory application, you get no output.  The new version
+  // deletes anything from sigma that occurs before the [BOS] or after the
+  // [EOS], so that you only get insertion where you should --- in the string
+  // proper. Note that only in an insertion with no specified left or right
+  // context will this situation arise.
+  //
+  // The slight drawback is that if someone writes an ill-formed
+  // insertion rule such as
+  //
+  // CDRewrite["" : "a" , "[EOS]", "", sigma_star]
+  //
+  // (note the misplaced [EOS]), then this will give an output --- though not
+  // with the illicit inserted "a" as written, as opposed to simply failing as
+  // it would have before. It's not clear this is a bad result.
+  if (del && (add_initial_boundary_marker || add_final_boundary_marker)) {
+    VectorFst<Arc> del_sigma(sigma);
+    // Creates the sigma* deletion fst.
+    for (StateIterator<VectorFst<Arc>> siter(del_sigma);
+         !siter.Done();
+         siter.Next()) {
+      for (MutableArcIterator<VectorFst<Arc>> aiter(&del_sigma, siter.Value());
+           !aiter.Done();
+           aiter.Next()) {
+        Arc arc = aiter.Value();
+        arc.olabel = 0;
+        aiter.SetValue(arc);
+      }
+    }
+    VectorFst<Arc> initial_del_sigma;
+    if (add_initial_boundary_marker) {
+      initial_del_sigma = del_sigma;
+    } else {
+      start = initial_del_sigma.AddState();
+      initial_del_sigma.SetStart(start);
+      initial_del_sigma.SetFinal(start, Weight::One());
+    }
+    VectorFst<Arc> final_del_sigma;
+    if (add_final_boundary_marker) {
+      final_del_sigma = del_sigma;
+    } else {
+      start = final_del_sigma.AddState();
+      final_del_sigma.SetStart(start);
+      final_del_sigma.SetFinal(start, Weight::One());
+    }
+    Concat(&initial_del_sigma, *final_fst);
+    Concat(initial_del_sigma, &final_del_sigma);
+    *final_fst = final_del_sigma;
+  }
+}
+
+template <class Arc>
+void CDRewriteRule<Arc>::BoundaryInserter(
+    const Fst<Arc>& sigma, VectorFst<Arc>* final_fst,
+    bool add_initial_boundary_marker,
+    bool add_final_boundary_marker) {
+  HandleBoundaryMarkers(sigma, final_fst, false,
+                        add_initial_boundary_marker,
+                        add_final_boundary_marker);
+  Optimize(final_fst);
+  ArcSort(final_fst, OLabelCompare<Arc>());
+}
+
+template <class Arc>
+void CDRewriteRule<Arc>::BoundaryDeleter(
+    const Fst<Arc>& sigma, VectorFst<Arc>* final_fst,
+    bool add_initial_boundary_marker,
+    bool add_final_boundary_marker) {
+  HandleBoundaryMarkers(sigma, final_fst, true,
+                        add_initial_boundary_marker,
+                        add_final_boundary_marker);
+  Optimize(final_fst);
+  ArcSort(final_fst, ILabelCompare<Arc>());
+}
+
+template <class Arc>
+bool CDRewriteRule<Arc>::HasArcWithLabel(const Fst<Arc>& fst, Label label) {
+  if (label == kNoLabel) return false;
+  for (StateIterator<Fst<Arc>> siter(fst); !siter.Done(); siter.Next()) {
+    for (ArcIterator<Fst<Arc>> aiter(fst, siter.Value());
+         !aiter.Done();
+         aiter.Next()) {
+      Arc arc = aiter.Value();
+      if (arc.ilabel == label || arc.olabel == label)
+        return true;
+    }
+  }
+  return false;
 }
 
 }  // namespace internal.
@@ -646,8 +841,12 @@ void CDRewriteCompile(const Fst<Arc> &phi, const Fst<Arc> &psi,
                       const Fst<Arc> &lambda, const Fst<Arc> &rho,
                       const Fst<Arc> &sigma, MutableFst<Arc> *fst,
                       CDRewriteDirection dir, CDRewriteMode mode,
-                      bool phiXpsi) {
-  internal::CDRewriteRule<Arc> cdrule(phi, psi, lambda, rho, phiXpsi);
+                      bool phiXpsi,
+                      typename Arc::Label initial_boundary_marker = kNoLabel,
+                      typename Arc::Label final_boundary_marker = kNoLabel) {
+  internal::CDRewriteRule<Arc> cdrule(phi, psi, lambda, rho, phiXpsi,
+                                      initial_boundary_marker,
+                                      final_boundary_marker);
   cdrule.Compile(sigma, fst, dir, mode);
 }
 
@@ -667,8 +866,11 @@ template <class Arc>
 void CDRewriteCompile(const Fst<Arc> &phi, const Fst<Arc> &psi,
                       const Fst<Arc> &lambda, const Fst<Arc> &rho,
                       const Fst<Arc> &sigma, MutableFst<Arc> *fst,
-                      CDRewriteDirection dir, CDRewriteMode mode) {
-  CDRewriteCompile(phi, psi, lambda, rho, sigma, fst, dir, mode, false);
+                      CDRewriteDirection dir, CDRewriteMode mode,
+                      typename Arc::Label initial_boundary_marker = kNoLabel,
+                      typename Arc::Label final_boundary_marker = kNoLabel) {
+  CDRewriteCompile(phi, psi, lambda, rho, sigma, fst, dir, mode, false,
+                   initial_boundary_marker, final_boundary_marker);
 }
 
 // Builds a transducer object representing the context-dependent rewrite rule:
@@ -688,14 +890,17 @@ template <class Arc>
 void CDRewriteCompile(const Fst<Arc> &tau, const Fst<Arc> &lambda,
                       const Fst<Arc> &rho, const Fst<Arc> &sigma,
                       MutableFst<Arc> *fst, CDRewriteDirection dir,
-                      CDRewriteMode mode) {
+                      CDRewriteMode mode,
+                      typename Arc::Label initial_boundary_marker = kNoLabel,
+                      typename Arc::Label final_boundary_marker = kNoLabel) {
   VectorFst<Arc> phi(tau);
   Project(&phi, PROJECT_INPUT);
   ArcMap(&phi, RmWeightMapper<Arc>());
   Optimize(&phi);
-  CDRewriteCompile(phi, tau, lambda, rho, sigma, fst, dir, mode, true);
+  CDRewriteCompile(phi, tau, lambda, rho, sigma, fst, dir, mode, true,
+                   initial_boundary_marker, final_boundary_marker);
 }
 
 }  // namespace fst
 
-#endif  // FST_GRAMMAR_CDREWRITE_CD_REWRITE_H_
+#endif  // FST_GRAMMAR_CDREWRITE_CDREWRITE_H_

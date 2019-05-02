@@ -16,7 +16,6 @@
 #include <thrax/compat/compat.h>
 #include <fst/fstlib.h>
 #include <thrax/datatype.h>
-#include <thrax/compat/stlfunctions.h>
 #include <thrax/compat/registry.h>
 
 namespace thrax {

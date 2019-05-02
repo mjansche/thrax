@@ -22,7 +22,6 @@
 #include <thrax/algo/cdrewrite.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
-#include <thrax/compat/stlfunctions.h>
 
 DECLARE_bool(save_symbols);  // From util/flags.cc.
 DECLARE_int64(initial_boundary_marker);
@@ -36,6 +35,8 @@ class CDRewrite : public Function<Arc> {
  public:
   typedef fst::Fst<Arc> Transducer;
   typedef fst::VectorFst<Arc> MutableTransducer;
+  using Weight = typename Arc::Weight;
+  using Label = typename Arc::Label;
 
   CDRewrite() {}
   ~CDRewrite() final {}
@@ -154,19 +155,10 @@ class CDRewrite : public Function<Arc> {
         return nullptr;
       }
     }
-    MutableTransducer sigma_aug(sigma);
     MutableTransducer* output = new MutableTransducer();
-    AddBoundaryMarkersToSigma(&sigma_aug);
-    fst::CDRewriteCompile(tau, lambda, rho, sigma_aug, output, dir, mode);
-    MutableTransducer inserter;
-    BoundaryInserter(sigma, &inserter);
-    MutableTransducer deleter;
-    BoundaryDeleter(sigma, &deleter);
-    MutableTransducer tmp;
-    fst::ArcSort(&inserter, fst::OLabelCompare<Arc>());
-    fst::Compose(inserter, *output, &tmp);
-    fst::ArcSort(&deleter, fst::ILabelCompare<Arc>());
-    fst::Compose(tmp, deleter, output);
+    fst::CDRewriteCompile(tau, lambda, rho, sigma, output, dir, mode,
+                              FLAGS_initial_boundary_marker,
+                              FLAGS_final_boundary_marker);
     if (FLAGS_save_symbols) {
       output->SetInputSymbols(symbols);
       output->SetOutputSymbols(symbols);
@@ -175,94 +167,6 @@ class CDRewrite : public Function<Arc> {
   }
 
  private:
-  // Essentially the same functionality as
-  // ContextDependentRewriteRule<Arc>::AddMarkersToSigma(), which is a private
-  // method of that class. This adds the beginning and ending markers which must
-  // be a part of sigma.
-  void AddBoundaryMarkersToSigma(MutableTransducer* sigma) {
-    for (typename Arc::StateId s = 0; s < sigma->NumStates(); ++s) {
-      if (sigma->Final(s) != Arc::Weight::Zero()) {
-        sigma->AddArc(s, Arc(FLAGS_initial_boundary_marker,
-                             FLAGS_initial_boundary_marker,
-                             Arc::Weight::One(), sigma->Start()));
-        sigma->AddArc(s, Arc(FLAGS_final_boundary_marker,
-                             FLAGS_final_boundary_marker,
-                             Arc::Weight::One(), sigma->Start()));
-      }
-    }
-  }
-
-  // Construct transducer that either inserts or deletes boundary markers.
-  void HandleBoundaryMarkers(const Transducer& sigma,
-                             MutableTransducer* final_fst, bool del) {
-    MutableTransducer initial;
-    typename Arc::StateId start = initial.AddState();
-    typename Arc::StateId end = initial.AddState();
-    initial.SetStart(start);
-    initial.SetFinal(end, Arc::Weight::One());
-    initial.AddArc(start, Arc(del ? FLAGS_initial_boundary_marker : 0,
-                              del ? 0 : FLAGS_initial_boundary_marker,
-                              Arc::Weight::One(), end));
-    start = final_fst->AddState();
-    end = final_fst->AddState();
-    final_fst->SetStart(start);
-    final_fst->SetFinal(end, Arc::Weight::One());
-    final_fst->AddArc(start, Arc(del ? FLAGS_final_boundary_marker : 0,
-                                 del ? 0 : FLAGS_final_boundary_marker,
-                                 Arc::Weight::One(), end));
-    fst::Concat(&initial, sigma);
-    fst::Concat(initial, final_fst);
-    // Fixes bug whereby
-    //
-    // CDRewrite["" : "a", "", "", sigma_star]
-    //
-    // produces no output ("rewrite failed") because the rule inserts an "a"
-    // before the "[BOS]" and after the "[EOS]", in addition to anywhere in the
-    // input string. The output filter "[BOS] sigma_star [EOS]" blocks these, so
-    // that in an obligatory application, you get no output.  The new version
-    // deletes anything from sigma that occurs before the [BOS] or after the
-    // [EOS], so that you only get insertion where you should --- in the string
-    // proper. Note that only in an insertion with no specified left or right
-    // context will this situation arise.
-    //
-    // The slight drawback is that if someone writes an ill-formed
-    // insertion rule such as
-    //
-    // CDRewrite["" : "a" , "[EOS]", "", sigma_star]
-    //
-    // (note the misplaced [EOS]), then this will give an output --- though not
-    // with the illicit inserted "a" as written, as opposed to simply failing as
-    // it would have before. It's not clear this is a bad result.
-    if (del) {
-      MutableTransducer initial_del_sigma(sigma);
-      // Creates the sigma* deletion fst.
-      for (int i = 0; i < initial_del_sigma.NumStates(); ++i) {
-        for (fst::MutableArcIterator<MutableTransducer> aiter(
-                 &initial_del_sigma, i);
-             !aiter.Done();
-             aiter.Next()) {
-          Arc arc = aiter.Value();
-          arc.olabel = 0;
-          aiter.SetValue(arc);
-        }
-      }
-      MutableTransducer final_del_sigma(initial_del_sigma);
-      fst::Concat(&initial_del_sigma, *final_fst);
-      fst::Concat(initial_del_sigma, &final_del_sigma);
-      *final_fst = final_del_sigma;
-    }
-  }
-
-  // Construct epsilon:initial sigma* epsilon:final_fst
-  void BoundaryInserter(const Transducer& sigma, MutableTransducer* final_fst) {
-    HandleBoundaryMarkers(sigma, final_fst, false);
-  }
-
-  // Construct initial:epsilon sigma* final_fst:epsilon
-  void BoundaryDeleter(const Transducer& sigma, MutableTransducer* final_fst) {
-    HandleBoundaryMarkers(sigma, final_fst, true);
-  }
-
   DISALLOW_COPY_AND_ASSIGN(CDRewrite<Arc>);
 };
 

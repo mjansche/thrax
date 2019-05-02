@@ -20,7 +20,6 @@
 #include <thrax/closure.h>
 #include <thrax/compose.h>
 #include <thrax/concat.h>
-#include <thrax/connect.h>
 #include <thrax/determinize.h>
 #include <thrax/difference.h>
 #include <thrax/expand.h>
@@ -62,7 +61,6 @@ void RegisterFunctions() {
   REGISTER_GRM_FUNCTION(Compose);
   REGISTER_GRM_FUNCTION(Concat);
   REGISTER_GRM_FUNCTION(ConcatDelayed);
-  REGISTER_GRM_FUNCTION(Connect);
   REGISTER_GRM_FUNCTION(Determinize);
   REGISTER_GRM_FUNCTION(Difference);
   REGISTER_GRM_FUNCTION(Expand);

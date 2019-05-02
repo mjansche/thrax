@@ -90,3 +90,11 @@ Thrax - Release 1.2.7
  * Adds some more useful debugging errors (e.g. when user tries to
    reuse a namespace designator)
 
+Thrax - Release 1.2.8
+
+ * Improved integration of boundary symbols in CDRewrite
+
+Thrax - Release 1.2.9
+
+ * Improved implementation of the cross-product (colon) operator
+ * Removes unused Connect built-in

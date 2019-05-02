@@ -37,6 +37,7 @@
 #include <fst/string.h>
 #include <fst/vector-fst.h>
 #include <thrax/make-parens-pair-vector.h>
+#include <unordered_map>
 #include <thrax/compat/stlfunctions.h>
 
 namespace thrax {
@@ -120,6 +121,11 @@ class AbstractGrmManager {
   // Sorts input labels of all FSTs in the archive.
   void SortRuleInputLabels();
 
+  // Alternative to LoadArchive - provide the FSTs and keys directly.
+  // Takes ownership of the provided FSTs.
+  void LoadFstMap(
+      const std::unordered_map<string, const Transducer*>& named_fsts);
+
  protected:
   AbstractGrmManager();
 
@@ -155,6 +161,15 @@ bool AbstractGrmManager<Arc>::LoadArchive(FarReader *reader) {
   }
   SortRuleInputLabels();
   return true;
+}
+
+template <typename Arc>
+void AbstractGrmManager<Arc>::LoadFstMap(
+    const std::unordered_map<string, const Transducer*>& named_fsts) {
+  for (const auto& key_and_fst : named_fsts) {
+    fsts_[key_and_fst.first] = ABSL_DIE_IF_NULL(key_and_fst.second);
+  }
+  SortRuleInputLabels();
 }
 
 template <typename Arc>

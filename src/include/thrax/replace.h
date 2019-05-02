@@ -11,7 +11,6 @@
 #include <fst/fstlib.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
-#include <thrax/compat/stlfunctions.h>
 
 // TODO(rws): Figure out what to do with if we are keeping symbol tables around
 // here.  It looks as if Replace() may take care of this since it does

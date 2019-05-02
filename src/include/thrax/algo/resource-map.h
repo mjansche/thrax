@@ -40,13 +40,13 @@
 #ifndef THRAX_ALGO_RESOURCE_MAP_H_
 #define THRAX_ALGO_RESOURCE_MAP_H_
 
-#include <unordered_map>
 #include <string>
 #include <typeinfo>
 
 #include <fst/compat.h>
 #include <thrax/compat/compat.h>
 #include <thrax/compat/closure.h>
+#include <unordered_map>
 #include <thrax/compat/stlfunctions.h>
 
 namespace thrax {

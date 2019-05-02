@@ -23,8 +23,8 @@
 #include <thrax/identifier-node.h>
 #include <thrax/rule-node.h>
 #include <thrax/statement-node.h>
-#include <thrax/compat/stlfunctions.h>
 #include <unordered_map>
+#include <thrax/compat/stlfunctions.h>
 
 namespace thrax {
 

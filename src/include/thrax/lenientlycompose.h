@@ -15,7 +15,6 @@
 #include <thrax/algo/lenientlycompose.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
-#include <thrax/compat/stlfunctions.h>
 
 DECLARE_bool(save_symbols);  // From util/flags.cc.
 

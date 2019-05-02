@@ -3,8 +3,6 @@
 
 #include <type_traits>
 
-#include <fst/compat.h>
-#include <thrax/compat/compat.h>
 #include <fst/fstlib.h>
 
 // These functions are generic optimization methods for mutable FSTs, inspired
@@ -165,19 +163,6 @@ void Optimize(MutableFst<Arc> *fst, bool compute_props = false) {
     // The FST is (known to be) an acceptor.
     internal::OptimizeAcceptor(fst, compute_props);
   }
-}
-
-// This function performs a simple space optimization on FSTs that are
-// (unions of) pairs of strings. It first pushes labels towards the initial
-// state, then performs epsilon-removal. This will reduce the number of arcs
-// and states by the length of the shorter of the two strings in the
-// cross-product; label-pushing may also speed up downstream composition.
-template <class Arc>
-void OptimizeStringCrossProducts(MutableFst<Arc> *fst,
-                                 bool compute_props = false) {
-  // Pushes labels towards the initial state.
-  Push<Arc, REWEIGHT_TO_INITIAL>(*fst, fst, kPushLabels);
-  internal::MaybeRmEpsilon(fst, compute_props);
 }
 
 // This function optimizes the right-hand side of an FST difference in an

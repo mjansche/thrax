@@ -24,7 +24,6 @@
 #include <thrax/function.h>
 #include <thrax/symbols.h>
 #include <thrax/compat/stlfunctions.h>
-#include <thrax/compat/registry.h>
 
 DECLARE_bool(save_symbols);  // From util/flags.cc.
 DECLARE_string(indir);  // From util/flags.cc.
@@ -120,8 +119,8 @@ class StringFst : public Function<Arc> {
           delete fst;
           return nullptr;
         }
-        for (int i = 0; i < chunk.length(); ++i) {
-          if (isspace(chunk[i])) {
+        for (const auto ch : chunk) {
+          if (isspace(ch)) {
             std::cout << "StringFst: Cannot have labels containing whitespace: "
                       << chunk << std::endl;
             delete fst;

@@ -21,7 +21,6 @@
 #include <fst/fstlib.h>
 #include <thrax/datatype.h>
 #include <thrax/function.h>
-#include <thrax/compat/stlfunctions.h>
 
 DECLARE_bool(save_symbols);  // From util/flags.cc.
 
@@ -72,12 +71,12 @@ class Compose : public Function<Arc> {
       }
       if (sort_mode != "right") {
         left = new fst::ArcSortFst<Arc, fst::OLabelCompare<Arc> >(
-            *left, ocomp);
+            *left, ocomp_);
         delete_left = true;
       }
       if (sort_mode != "left") {
         right = new fst::ArcSortFst<Arc, fst::ILabelCompare<Arc> >(
-            *right, icomp);
+            *right, icomp_);
         delete_right = true;
       }
     }
@@ -90,8 +89,9 @@ class Compose : public Function<Arc> {
   }
 
  private:
-  fst::ILabelCompare<Arc> icomp;
-  fst::OLabelCompare<Arc> ocomp;
+  // These are stateless.
+  fst::ILabelCompare<Arc> icomp_;
+  fst::OLabelCompare<Arc> ocomp_;
 
   DISALLOW_COPY_AND_ASSIGN(Compose<Arc>);
 };
