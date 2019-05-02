@@ -1,7 +1,7 @@
 // Compiles context-dependent rewrite rules into weighted transducers.
 
-#ifndef FST_GRAMMAR_CDREWRITE_CDREWRITE_H_
-#define FST_GRAMMAR_CDREWRITE_CDREWRITE_H_
+#ifndef FST_UTIL_OPERATORS_CDREWRITE_H_
+#define FST_UTIL_OPERATORS_CDREWRITE_H_
 
 #include <memory>
 #include <utility>
@@ -903,4 +903,4 @@ void CDRewriteCompile(const Fst<Arc> &tau, const Fst<Arc> &lambda,
 
 }  // namespace fst
 
-#endif  // FST_GRAMMAR_CDREWRITE_CDREWRITE_H_
+#endif  // FST_UTIL_OPERATORS_CDREWRITE_H_

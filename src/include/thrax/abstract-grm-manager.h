@@ -249,6 +249,8 @@ bool AbstractGrmManager<Arc>::RewriteBytes(
     return false;
 
   StringifyFst(&output_fst);
+  if (output_fst.Start() == ::fst::kNoStateId)
+    return false;
 
   fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE);
   return printer(output_fst, output);
@@ -451,6 +453,8 @@ bool RuleCascade<Arc>::RewriteBytes(const string& input,
   if (!Rewrite(input_fst, &output_fst))
     return false;
   AbstractGrmManager<Arc>::StringifyFst(&output_fst);
+  if (output_fst.Start() == ::fst::kNoStateId)
+    return false;
   fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE);
   return printer(output_fst, output);
 }
@@ -462,6 +466,8 @@ bool RuleCascade<Arc>::RewriteBytes(const Transducer& input,
   if (!Rewrite(input, &output_fst))
     return false;
   AbstractGrmManager<Arc>::StringifyFst(&output_fst);
+  if (output_fst.Start() == ::fst::kNoStateId)
+    return false;
   fst::StringPrinter<Arc> printer(fst::StringTokenType::BYTE);
   return printer(output_fst, output);
 }

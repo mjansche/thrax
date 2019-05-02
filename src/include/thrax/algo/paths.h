@@ -299,7 +299,7 @@ StringPathIterator<Arc>::StringPathIterator(
 
 template <class Arc>
 void StringPathIterator<Arc>::IString(string *str) {
-  if (!internal::LabelsToString(ILabels(), str, itype_, isyms_)) SetError();
+  if (!LabelsToString(ILabels(), str, itype_, isyms_)) SetError();
 }
 
 template <class Arc>
@@ -311,7 +311,7 @@ string StringPathIterator<Arc>::IString() {
 
 template <class Arc>
 void StringPathIterator<Arc>::OString(string *str) {
-  if (!internal::LabelsToString(OLabels(), str, otype_, osyms_)) SetError();
+  if (!LabelsToString(OLabels(), str, otype_, osyms_)) SetError();
 }
 
 template <class Arc>
